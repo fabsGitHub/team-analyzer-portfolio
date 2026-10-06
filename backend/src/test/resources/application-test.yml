@@ -1,3 +1,4 @@
+# Test fixtures only. Signing material is generated per JVM run by TeamanalyzerApplicationTests.
 spring:
   datasource:
     url: jdbc:tc:mysql:8.4.6:///teambase
@@ -20,13 +21,8 @@ spring:
     validate-migration-naming: true
 
   mail:
-    host: smtp.example.com
-    port: 587
-    username: test@example.invalid
-    password: test-only-placeholder
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
+    host: localhost
+    port: 1025
 
 server:
   port: 8080
@@ -34,23 +30,18 @@ server:
 app:
   frontend-base-url: "http://localhost:5173"
   verify-endpoint-path: "/verify"
+  # Test signing secrets are supplied at runtime from the test context.
 
-  download-token-secret: test-only-placeholder
-
-  # aus dem Dokument
   auth:
     issuer: "test-issuer"
-    email-verify-exp-ttl: 24
-    hmac-secret: test-only-placeholder
+    email-verify-ttl: 24m
     jwt-access-ttl: 15m
     jwt-refresh-ttl: 14d
     verification-base-url: http://localhost
 
-  # zusätzliche Testwerte
-  hmac-secret: test-only-placeholder
+  # Retained for code paths that still read the legacy property.
 
   jwt:
-    secret: test-only-placeholder
     expiration: 3600000
 
 logging:

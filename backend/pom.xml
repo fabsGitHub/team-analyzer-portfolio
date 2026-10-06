@@ -22,8 +22,8 @@
 		<sonar.maven.plugin.version>3.10.0.2594</sonar.maven.plugin.version>
 		<lombok.version>1.18.34</lombok.version>
 
-		<!-- Neu: Version für Mockito explizit, damit copy-Plugin auflösen kann -->
-		<mockito.version>5.12.0</mockito.version>
+		<!-- Mockito 5.14+ provides the Java agent required for explicit instrumentation on Java 21. -->
+		<mockito.version>5.14.0</mockito.version>
 	</properties>
 
 	<!-- BOM für konsistente Versionen -->
@@ -139,42 +139,28 @@
 				</configuration>
 			</plugin>
 
-			<!-- Neu: Kopiere mockito-core als Agent in target/mockito-agent.jar -->
+			<!-- Expose the Mockito artifact path so Surefire can start it as a Java agent. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<version>3.6.1</version>
 				<executions>
 					<execution>
-						<id>copy-mockito-agent</id>
-						<phase>test-compile</phase>
 						<goals>
-							<goal>copy</goal>
+							<goal>properties</goal>
 						</goals>
-						<configuration>
-							<artifactItems>
-								<artifactItem>
-									<groupId>org.mockito</groupId>
-									<artifactId>mockito-core</artifactId>
-									<version>${mockito.version}</version>
-									<outputDirectory>${project.build.directory}</outputDirectory>
-									<destFileName>mockito-agent.jar</destFileName>
-								</artifactItem>
-							</artifactItems>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
 
-			<!-- Run tests with profile + Javaagent (Mockito) + JaCoCo (${argLine}) -->
+			<!-- Run tests with the test profile, Mockito instrumentation, and JaCoCo. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.2.5</version>
 				<configuration>
-					<!-- Wichtig: Erst Mockito-Agent, dann ${argLine} für JaCoCo (wird von
-					jacoco:prepare-agent gesetzt) -->
-					<argLine>-javaagent:${project.build.directory}/mockito-agent.jar ${argLine}</argLine>
+					<!-- Keep JaCoCo's argLine and add Mockito's Java agent using late replacement. -->
+					<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
 					<systemPropertyVariables>
 						<spring.profiles.active>test</spring.profiles.active>
 					</systemPropertyVariables>

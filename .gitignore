@@ -13,6 +13,7 @@ id_ed25519
 # Env files
 .env
 .env.*
+!.env.production.example
 
 # (Optional) Zertifikate/Keystores – häufig ebenfalls geheim
 *.crt
@@ -25,12 +26,3 @@ id_ed25519
 
 # OS/Editor noise (optional)
 .DS_Store
-
-# Local credentials and deployment configuration
-.env
-.env.*
-!.env.example
-gitkey*
-*.pem
-*.key
-.vercel/

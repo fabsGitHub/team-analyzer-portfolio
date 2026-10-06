@@ -86,7 +86,7 @@ class TeamAdminControllerWebMvcTest {
     // User als Mocks mit realem Rollen-Set
     user1 = mock(User.class);
     when(user1.getId()).thenReturn(u1);
-    when(user1.getRoles()).thenReturn(new HashSet<>());
+    when(user1.getRoles()).thenReturn(new HashSet<>(Set.of(Role.LEADER)));
 
     user2 = mock(User.class);
     when(user2.getId()).thenReturn(u2);

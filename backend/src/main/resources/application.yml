@@ -13,14 +13,6 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: false
-  mail:
-    host: smtp.example.com
-    port: 587
-    username: "${SMTP_USERNAME:}"
-    password: "${SMTP_PASSWORD:}"
-    properties:
-      "[mail.smtp.auth]": true
-      "[mail.smtp.starttls.enable]": true
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
 
@@ -30,13 +22,14 @@ server:
 app:
   auth:
     issuer: "teamanalyzer"
+    log-verification-link: ${LOG_VERIFICATION_LINK:false}
     email-verify-ttl: 60m
     hmac-secret: "${EMAIL_VERIFY_HMAC_SECRET}"
   frontend-base-url: "http://localhost:5173"
   verify-endpoint-path: "/verify"
   download-token-secret: "${DOWNLOAD_TOKEN_HMAC_SECRET}"
   jwt:
-    secret: "${APP_JWT_SECRET_BASE64}"
+    secret: ${APP_JWT_SECRET_BASE64}
   mail:
     enabled: false # <— Dev: NIE mailen
   cookies:
@@ -57,37 +50,8 @@ spring:
       on-profile: mysql
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/teambase?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: "${MYSQL_USER}"
-    password: "${MYSQL_PASSWORD}"
-    driverClassName: com.mysql.cj.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-  flyway:
-    locations: classpath:db/migration,classpath:db/seed
-    clean-disabled: false
-    validate-migration-naming: true
-
-app:
-  mail:
-    enabled: false # <— auch im mysql-Profil aus
-
-logging:
-  level:
-    "[com.teamanalyzer]": DEBUG
-    "[org.springframework.security]": INFO
-
----
-# ---------- prod profile ----------
-spring:
-  config:
-    activate:
-      on-profile: prod
-  datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/teambase?useSSL=true&serverTimezone=UTC
-    username: "${MYSQL_USER}"
-    password: "${MYSQL_PASSWORD}"
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
     driverClassName: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -98,12 +62,49 @@ spring:
     clean-disabled: true
     validate-migration-naming: true
 
+app:
+  mail:
+    enabled: false # <— auch im mysql-Profil aus
+
+logging:
+  level:
+    "[com.teamanalyzer]": INFO
+    "[org.springframework.security]": INFO
+
+---
+# ---------- prod profile ----------
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/teambase?useSSL=true&serverTimezone=UTC
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driverClassName: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    locations: classpath:db/migration/mysql
+    clean-disabled: true
+    validate-migration-naming: true
+  mail:
+    host: ${SPRING_MAIL_HOST}
+    port: ${SPRING_MAIL_PORT:587}
+    username: "${SPRING_MAIL_USERNAME}"
+    password: "${SPRING_MAIL_PASSWORD}"
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+
 server:
   forward-headers-strategy: framework
 
 app:
   mail:
-    enabled: true # <— nur wenn SMTP real verfügbar ist
+    enabled: true # <— only when real SMTP settings are supplied
   cookies:
     secure: true
 

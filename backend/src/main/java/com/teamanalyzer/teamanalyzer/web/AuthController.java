@@ -54,6 +54,9 @@ public class AuthController {
     @Value("${app.mail.enabled:false}")
     private boolean mailEnabled;
 
+    @Value("${app.auth.log-verification-link:false}")
+    private boolean logVerificationLink;
+
     @Value("${app.cookies.secure:true}")
     private boolean cookieSecure;
 
@@ -105,8 +108,6 @@ public class AuthController {
         String token = emailTokenSvc.create(email, clock.now());
         String link = frontendBaseUrl + verifyEndpointPath + "?token=" + token;
 
-        log.info("DEV: Verification link for {} -> {}", email, link);
-
         if (mailEnabled) {
             try {
                 String subject = "Bitte bestätige deine E-Mail-Adresse";
@@ -122,6 +123,10 @@ public class AuthController {
             } catch (Exception ex) {
                 log.warn("E-Mail-Versand fehlgeschlagen (fahre ohne Mail fort): {}", ex.toString());
             }
+        }
+
+        if (!mailEnabled && logVerificationLink) {
+            log.warn("LOCAL ONLY: email verification link for {} -> {}", email, link);
         }
 
         return ResponseEntity.accepted().build();

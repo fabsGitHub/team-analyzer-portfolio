@@ -2,7 +2,7 @@
 <template>
     <div class="toasts" aria-live="polite" aria-atomic="true">
         <div
-            v-for="t in state.toasts as import('../types').Toast[]"
+            v-for="t in state.toasts"
             :key="t.id"
             class="toast-card"
             :class="t.type ? t.type : ''"

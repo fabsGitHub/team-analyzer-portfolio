@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f7f2">
+    <meta name="description" content="Explore Team Analyzer: a thoughtful way to collect team feedback, understand the signal, and choose a next step.">
+    <meta property="og:title" content="Team Analyzer — make space for better conversations">
+    <meta property="og:description" content="A hands-on preview of a team survey and insight workflow. Sample data only.">
+    <title>Team Analyzer — make space for better conversations</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="announcement">
+      <span class="announcement-dot" aria-hidden="true"></span>
+      <span>Interactive product preview</span>
+      <span class="announcement-divider" aria-hidden="true"></span>
+      <span>Sample data only. No sign-up needed.</span>
+      <a href="#workspace" class="announcement-link">Jump to the demo <span aria-hidden="true">↘</span></a>
+    </div>
+
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Team Analyzer home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span>team<span class="brand-light">analyzer</span></span>
+      </a>
+      <nav class="top-nav" aria-label="Main navigation">
+        <a href="#how-it-works">How it works</a>
+        <a href="#workspace">Explore insights</a>
+        <a href="#about-demo">About this demo</a>
+      </nav>
+      <a class="header-cta" href="https://github.com/fabsGitHub/team-analyzer" target="_blank" rel="noreferrer">
+        View on GitHub <span aria-hidden="true">↗</span>
+      </a>
+    </header>
+
+    <main>
+      <section class="hero page-shell">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="eyebrow-line"></span> A calmer way to hear your team</p>
+          <h1>Make space for<br><em>better</em> conversations.</h1>
+          <p class="hero-description">Team Analyzer helps team leads ask thoughtful questions, invite people in, and turn honest feedback into a clear next step.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#workspace">Explore the sample workspace <span aria-hidden="true">↓</span></a>
+            <button class="button button-secondary" type="button" data-open-survey>Try a sample survey <span aria-hidden="true">↗</span></button>
+          </div>
+          <div class="hero-note">
+            <span class="note-icon" aria-hidden="true">✳</span>
+            <span>Designed for teams. Made to keep the conversation human.</span>
+          </div>
+        </div>
+
+        <div class="hero-art" aria-label="Preview of the Team Analyzer insights dashboard">
+          <div class="art-orbit orbit-one"></div>
+          <div class="art-orbit orbit-two"></div>
+          <div class="floating-label label-top"><span class="label-spark" aria-hidden="true">✦</span> A pulse worth discussing</div>
+          <div class="hero-dashboard">
+            <div class="mini-window-top">
+              <span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="workspace-tag"><span class="workspace-live"></span> Sample workspace</span>
+              <span class="mini-avatar">TA</span>
+            </div>
+            <div class="hero-dash-content">
+              <div class="hero-dash-title">
+                <div>
+                  <p class="mini-overline">WEEKLY PULSE <span class="mini-status">COMPLETE</span></p>
+                  <h2>Team feeling</h2>
+                </div>
+                <button type="button" class="dots-button" aria-label="More sample dashboard options">•••</button>
+              </div>
+              <div class="hero-score">
+                <span class="score-number">4.1</span><span class="score-outof">/ 5</span>
+                <span class="score-change"><span aria-hidden="true">↗</span> 0.4 <small>this month</small></span>
+              </div>
+              <div class="sparkline" aria-label="A rising sample feedback trend">
+                <span style="height: 31%"></span><span style="height: 45%"></span><span style="height: 39%"></span><span style="height: 53%"></span><span style="height: 48%"></span><span style="height: 65%"></span><span style="height: 61%"></span><span style="height: 76%"></span><span style="height: 69%"></span><span style="height: 88%"></span><span style="height: 81%"></span><span style="height: 100%"></span>
+              </div>
+              <div class="sparkline-labels"><span>Jun 03</span><span>Jun 10</span><span>Jun 17</span><span>Jun 24</span></div>
+              <div class="hero-dash-footer">
+                <div class="avatar-stack" aria-label="12 sample responses"><span>J</span><span>M</span><span>A</span><span>+</span></div>
+                <span><strong>12</strong> responses</span>
+                <span class="completion-pill">86% participation</span>
+              </div>
+            </div>
+          </div>
+          <div class="floating-card">
+            <span class="floating-card-icon" aria-hidden="true">↗</span>
+            <div><strong>One bright spot</strong><small>Team support is trending up</small></div>
+          </div>
+          <div class="floating-label label-bottom"><span class="pulse-icon" aria-hidden="true"></span> Your voice matters here</div>
+        </div>
+      </section>
+
+      <section class="proof-strip page-shell" aria-label="Product principles">
+        <p><span class="proof-symbol" aria-hidden="true">01</span> Ask with intention</p>
+        <p><span class="proof-symbol" aria-hidden="true">02</span> Listen without noise</p>
+        <p><span class="proof-symbol" aria-hidden="true">03</span> Act on what you learn</p>
+      </section>
+
+      <section class="section intro-section page-shell" id="how-it-works">
+        <div class="section-heading">
+          <p class="eyebrow"><span class="eyebrow-line"></span> Small steps, useful signal</p>
+          <h2>Feedback is a beginning,<br><em>not another report.</em></h2>
+        </div>
+        <div class="steps-grid">
+          <article class="step-card">
+            <span class="step-number">01</span>
+            <div class="step-icon icon-question" aria-hidden="true"><span>?</span></div>
+            <h3>Ask what matters</h3>
+            <p>Shape a focused survey around team priorities, collaboration, and the day-to-day experience.</p>
+            <span class="step-foot">Clear questions, shared purpose</span>
+          </article>
+          <article class="step-card step-featured">
+            <span class="step-number">02</span>
+            <div class="step-icon icon-people" aria-hidden="true"><span></span><span></span><span></span></div>
+            <h3>Invite every voice</h3>
+            <p>Share a private participation link. Teammates can respond without creating an account.</p>
+            <span class="step-foot">Easy to join, simple to answer</span>
+          </article>
+          <article class="step-card">
+            <span class="step-number">03</span>
+            <div class="step-icon icon-insight" aria-hidden="true"><span></span><span></span><span></span></div>
+            <h3>Find the next step</h3>
+            <p>See response patterns together and export a snapshot to carry into your next conversation.</p>
+            <span class="step-foot">A signal for a real discussion</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="workspace-section" id="workspace">
+        <div class="page-shell">
+          <div class="workspace-intro">
+            <div>
+              <p class="eyebrow"><span class="eyebrow-line"></span> Step inside the sample</p>
+              <h2>From team signal<br>to <em>shared next step.</em></h2>
+            </div>
+            <div class="workspace-intro-right">
+              <p>Explore a sample pulse from a fictional product team. Switch groups, scan the patterns, or try answering a survey yourself.</p>
+              <span class="sample-pill"><span aria-hidden="true">✳</span> Fictional data, built into this page</span>
+            </div>
+          </div>
+
+          <div class="workspace-frame">
+            <aside class="workspace-rail" aria-label="Sample workspace navigation">
+              <div class="rail-brand"><span class="brand-mark small" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>team<span>analyzer</span></span></div>
+              <p class="rail-label">WORKSPACE</p>
+              <div class="rail-team"><span class="team-monogram">N</span><span>Northstar Studio<small>Product &amp; engineering</small></span><span class="rail-chevron" aria-hidden="true">⌄</span></div>
+              <p class="rail-label rail-label-spaced">INSIGHTS</p>
+              <a class="rail-link rail-link-active" href="#workspace"><span class="rail-icon" aria-hidden="true">◫</span> Overview</a>
+              <a class="rail-link" href="#participant"><span class="rail-icon" aria-hidden="true">☷</span> Surveys <span class="rail-count">2</span></a>
+              <a class="rail-link" href="#about-demo"><span class="rail-icon" aria-hidden="true">◷</span> Activity</a>
+              <div class="rail-bottom">
+                <div class="rail-help-mark" aria-hidden="true">?</div>
+                <div><strong>Need a hand?</strong><small>See how the sample works</small></div>
+              </div>
+            </aside>
+
+            <div class="workspace-main">
+              <div class="workspace-topbar">
+                <div class="breadcrumbs"><span>Northstar Studio</span><span aria-hidden="true">/</span><strong>Overview</strong></div>
+                <div class="topbar-actions"><span class="topbar-demo"><span></span> DEMO MODE</span><span class="topbar-avatar" aria-label="Sample account">F</span></div>
+              </div>
+
+              <div class="dashboard-content">
+                <div class="dashboard-heading">
+                  <div>
+                    <p class="dashboard-date">MONDAY, JUNE 24, 2025</p>
+                    <h3>Team pulse <span class="title-period">· Q2 wrap-up</span></h3>
+                    <p class="dashboard-subtitle">A look at how the team is feeling and working together.</p>
+                  </div>
+                  <div class="dashboard-controls">
+                    <label for="team-filter">Sample group</label>
+                    <select id="team-filter" aria-label="Choose a sample team group">
+                      <option value="all">All team</option>
+                      <option value="product">Product design</option>
+                      <option value="engineering">Engineering</option>
+                    </select>
+                    <button class="export-button" type="button" id="export-results"><span aria-hidden="true">↓</span> Export snapshot</button>
+                  </div>
+                </div>
+
+                <div class="metric-grid" aria-live="polite">
+                  <article class="metric-card">
+                    <div class="metric-label">PARTICIPATION <span class="metric-icon" aria-hidden="true">↗</span></div>
+                    <div class="metric-value" id="metric-participation">86<span>%</span></div>
+                    <div class="metric-foot"><strong id="metric-responses">12 of 14</strong> team members responded</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="metric-label">TEAM PULSE <span class="metric-icon metric-icon-star" aria-hidden="true">✳</span></div>
+                    <div class="metric-value" id="metric-pulse">4.1<span class="out-of"> / 5</span></div>
+                    <div class="metric-foot"><strong class="positive" id="metric-change">+0.4</strong> vs. previous pulse</div>
+                  </article>
+                  <article class="metric-card metric-card-accent">
+                    <div class="metric-label">STRONGEST SIGNAL <span class="metric-icon" aria-hidden="true">✦</span></div>
+                    <div class="metric-value metric-text-value" id="metric-strength">Direction</div>
+                    <div class="metric-foot">Clarity on what matters most</div>
+                  </article>
+                </div>
+
+                <div class="insight-grid">
+                  <section class="insight-card" aria-labelledby="signals-title">
+                    <div class="insight-heading">
+                      <div><p class="card-overline">PULSE BREAKDOWN</p><h4 id="signals-title">How the team is feeling</h4></div>
+                      <span class="scale-note">Average · out of 5</span>
+                    </div>
+                    <div class="signal-list" id="signal-list">
+                      <div class="signal-row"><span class="signal-placeholder">Loading sample insights…</span></div>
+                    </div>
+                    <div class="legend"><span><i class="legend-dot legend-low"></i>Needs care</span><span><i class="legend-dot legend-mid"></i>Mixed</span><span><i class="legend-dot legend-high"></i>Feeling good</span></div>
+                  </section>
+
+                  <section class="insight-card conversation-card" aria-labelledby="conversation-title">
+                    <div class="conversation-head">
+                      <div><p class="card-overline">A CONVERSATION STARTER</p><h4 id="conversation-title">Notice what is changing</h4></div>
+                      <span class="conversation-spark" aria-hidden="true">✦</span>
+                    </div>
+                    <div class="conversation-score"><span class="change-arrow" aria-hidden="true">↗</span><strong id="conversation-change">+0.6</strong><span>this month</span></div>
+                    <p class="conversation-copy" id="conversation-copy">People are feeling more supported by one another. What is helping that happen?</p>
+                    <div class="conversation-divider"></div>
+                    <div class="conversation-tip"><span aria-hidden="true">✳</span><span>Use the numbers as a starting point. The best context comes from talking with your team.</span></div>
+                  </section>
+                </div>
+
+                <div class="workspace-footer">
+                  <span><span class="privacy-dot"></span> Sample data only — no real people or responses</span>
+                  <button type="button" class="text-button" data-open-survey>Try the participant view <span aria-hidden="true">↗</span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="participant-section page-shell" id="participant">
+        <div class="participant-copy">
+          <p class="eyebrow"><span class="eyebrow-line"></span> The participant experience</p>
+          <h2>Thoughtful questions.<br><em>Room to answer honestly.</em></h2>
+          <p>A good pulse takes only a moment. Try the sample survey to see how a private, low-friction response flow can feel.</p>
+          <ul class="participant-benefits">
+            <li><span aria-hidden="true">✓</span> No account or personal details</li>
+            <li><span aria-hidden="true">✓</span> One question at a time</li>
+            <li><span aria-hidden="true">✓</span> Your sample answers stay in this tab</li>
+          </ul>
+          <button class="button button-dark" type="button" data-open-survey>Start the sample survey <span aria-hidden="true">↗</span></button>
+        </div>
+        <div class="participant-preview" aria-hidden="true">
+          <div class="participant-card">
+            <div class="participant-card-top"><span class="participant-overline">NORTHSTAR STUDIO</span><span class="participant-lock">◇ Private</span></div>
+            <div class="participant-progress"><span></span></div>
+            <div class="participant-step">QUESTION 2 OF 5</div>
+            <h3>Can you ask for help when something gets stuck?</h3>
+            <p>Your perspective helps the team learn where support is working.</p>
+            <div class="preview-options"><span>Not yet</span><span>Sometimes</span><span>Mostly</span><span>Yes, always</span></div>
+            <div class="preview-card-bottom"><span>About 2 minutes</span><span>Team Analyzer <b>✳</b></span></div>
+          </div>
+          <div class="participant-note"><span class="note-sticker" aria-hidden="true">✦</span><span>Honest feedback is a team practice.</span></div>
+        </div>
+      </section>
+
+      <section class="about-band" id="about-demo">
+        <div class="page-shell about-band-inner">
+          <div class="about-mark" aria-hidden="true"><span>✳</span></div>
+          <div class="about-copy">
+            <p class="eyebrow eyebrow-light">A portfolio project</p>
+            <h2>Built to make the<br>team signal easier to hear.</h2>
+            <p>This interactive preview uses fictional sample data. It is a static product demo: it does not connect to the Team Analyzer backend, store responses, or send information anywhere.</p>
+          </div>
+          <div class="about-actions">
+            <a class="button button-light" href="https://github.com/fabsGitHub/team-analyzer" target="_blank" rel="noreferrer">Explore the source <span aria-hidden="true">↗</span></a>
+            <span>Spring Boot · Vue · TypeScript</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer page-shell">
+      <a class="brand footer-brand" href="#" aria-label="Team Analyzer home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span>team<span class="brand-light">analyzer</span></span>
+      </a>
+      <p>Made for more thoughtful team conversations.</p>
+      <a href="https://github.com/fabsGitHub/team-analyzer" target="_blank" rel="noreferrer">Open-source project <span aria-hidden="true">↗</span></a>
+      <span class="footer-copy">© 2025 Team Analyzer</span>
+    </footer>
+
+    <dialog class="survey-dialog" id="survey-dialog" aria-labelledby="survey-title">
+      <form method="dialog" class="dialog-dismiss"><button class="dialog-close" aria-label="Close sample survey" value="close">×</button></form>
+      <div class="survey-shell" id="survey-shell">
+        <div class="survey-modal-top">
+          <span class="survey-modal-brand"><span class="brand-mark small" aria-hidden="true"><i></i><i></i><i></i><i></i></span> Northstar Studio</span>
+          <span class="survey-private"><span aria-hidden="true">◇</span> Private sample</span>
+        </div>
+        <div class="survey-progress"><span id="survey-progress"></span></div>
+        <p class="survey-kicker" id="survey-step">QUESTION 1 OF 3</p>
+        <h2 id="survey-title">A moment to reflect.</h2>
+        <div id="survey-question-area"></div>
+        <div class="survey-modal-footer"><span>About 1 minute · Demo only</span><button class="button button-primary survey-continue" id="survey-continue" type="button" disabled>Continue <span aria-hidden="true">→</span></button></div>
+      </div>
+      <div class="survey-complete" id="survey-complete" hidden>
+        <span class="complete-mark" aria-hidden="true">✳</span>
+        <p class="survey-kicker">SAMPLE COMPLETE</p>
+        <h2>Thanks for taking a moment.</h2>
+        <p>Your answers stayed in this browser tab. Nothing was saved or sent.</p>
+        <button class="button button-primary" id="survey-restart" type="button">Try it again <span aria-hidden="true">↺</span></button>
+      </div>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
