@@ -1,0 +1,89 @@
+services:
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: teambase
+      MYSQL_USER: teambase
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in the root .env file}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in the root .env file}
+      
+    ports: ["3306:3306"]
+    volumes: [dbdata:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  sonarqube:
+    image: sonarqube:community
+    depends_on:
+      - sonar-db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: ${SONAR_JDBC_PASSWORD:?Set SONAR_JDBC_PASSWORD in the root .env file}
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+
+  sonar-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: ${SONAR_DB_PASSWORD:?Set SONAR_DB_PASSWORD in the root .env file}
+      POSTGRES_DB: sonar
+    volumes:
+      - sonar_db:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    env_file:
+      - ../.env
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/teambase?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-teambase}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in the root .env file}
+      # optional: log-level
+      # LOGGING_LEVEL_ROOT: INFO
+    depends_on:
+      db:
+        condition: service_healthy
+    ports: ["8080:8080"]
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    # VITE_API_BASE wird bereits im Dockerfile auf /api gesetzt;
+    # hier optional überschreiben:
+    # environment:
+    #   VITE_API_BASE: /api
+    ports: ["5173:80"]
+    depends_on: [backend]
+
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: "0"   # nur Verbindungen zum 'db'-Service erlauben
+      UPLOAD_LIMIT: 128M
+    ports:
+      - "127.0.0.1:8082:80"  # nur lokal exposen
+    volumes:
+    - ./docker/phpmyadmin/servername.conf:/etc/apache2/conf-enabled/servername.conf:ro
+
+volumes:
+  dbdata: {}
+  sonarqube_data:
+  sonarqube_extensions:
+  sonar_db:

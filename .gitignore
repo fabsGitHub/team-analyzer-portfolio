@@ -1,0 +1,36 @@
+# Deployment/Provider
+.vercel/
+
+# Secrets & private keys
+/gitkey
+*.pem
+*.key
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+
+# Env files
+.env
+.env.*
+
+# (Optional) Zertifikate/Keystores – häufig ebenfalls geheim
+*.crt
+*.cer
+*.der
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# OS/Editor noise (optional)
+.DS_Store
+
+# Local credentials and deployment configuration
+.env
+.env.*
+!.env.example
+gitkey*
+*.pem
+*.key
+.vercel/

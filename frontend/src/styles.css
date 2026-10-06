@@ -1,0 +1,251 @@
+/* frontend/src/styles.css */
+:root {
+  --bg: #fffaf5;
+  --fg: #222;
+  --muted: #6b6b6b;
+  --accent: #b66a2b;
+  --accent-2: #e6b17e;
+  --surface: #fff;
+  --border: #e6ded6;
+  --focus: #2b7ab6;
+  --danger: #b62b2b;
+  --ok: #2b8b5e;
+  --radius: 12px;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    'Noto Sans',
+    'Apple Color Emoji',
+    'Segoe UI Emoji';
+}
+a {
+  color: inherit;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+header.nav {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+.navwrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  max-width: 52rem;
+  margin: 0 auto;
+}
+.brand {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* This is the important change */
+.navigation {
+  margin-left: auto; /* pushes the nav to the right = max space from brand */
+}
+
+
+.tab {
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.tab[aria-current='page'] {
+  background: var(--accent-2);
+  border-color: var(--accent);
+}
+.lang {
+  margin-left: auto; /* small gap between nav and language select */
+
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+.row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.input,
+.select {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.btn {
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.btn.ghost {
+  background: transparent;
+}
+.btn.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.btn:focus-visible,
+.input:focus-visible,
+.select:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th,
+.table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem;
+  text-align: left;
+}
+.table th {
+  background: #fff6ee;
+}
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.kbd {
+  border: 1px solid var(--border);
+  border-bottom-width: 3px;
+  border-radius: 6px;
+  padding: 0.1rem 0.3rem;
+  font-family: ui-monospace, monospace;
+}
+.legend {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.user {
+  position: relative;
+  margin-left: 0.5rem;
+}
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+}
+.icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  padding: 0.5rem;
+  z-index: 20;
+}
+.menu-header {
+  padding: 0.25rem 0.5rem;
+}
+.menu-email {
+  font-size: 0.9rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+.menu-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 0.5rem 0;
+}
+.menu-item {
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+}
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: #fff6ee;
+  border-color: var(--border);
+  outline: none;
+}
+
+/* Containerbreite steuern (Header nutzt bereits max-width) */
+main, .card { max-width: 52rem; margin-inline: auto; }
+
+/* Tabs: Scroll auf schmalen Screens */
+.tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.badge { white-space: nowrap; }
+
+/* Buttons dezenter auf Mobil */
+@media (max-width: 720px){
+  .btn { padding: .55rem .75rem; }
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
