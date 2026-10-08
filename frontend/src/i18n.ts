@@ -264,6 +264,8 @@ const en = {
     signin: 'Sign in',
     signup: 'Sign up',
     name: 'Name',
+    email: 'Email',
+    password: 'Password',
     go: 'Continue',
     exists:
       'This email is already registered. Please sign in or reset your password.',
