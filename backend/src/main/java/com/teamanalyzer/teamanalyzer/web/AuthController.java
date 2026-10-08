@@ -202,12 +202,13 @@ public class AuthController {
 
         var newPlain = UUID.randomUUID().toString() + "." + UUID.randomUUID();
         var newHashB64 = sha256Base64Url(newPlain);
+        Duration refreshLifetime = refreshLifetimeFor(rt.getUser());
         tokens.save(RefreshToken.create(rt.getUser(), newHashB64,
-                clock.now().plus(14, ChronoUnit.DAYS), rt.getUserAgent(), rt.getIp()));
+                clock.now().plus(refreshLifetime), rt.getUserAgent(), rt.getIp()));
 
         var access = jwt.createAccessToken(rt.getUser());
         res.addHeader(HttpHeaders.SET_COOKIE,
-                buildRefreshCookie(newPlain, req, Duration.ofDays(14).toSeconds()).toString());
+                buildRefreshCookie(newPlain, req, refreshLifetime.toSeconds()).toString());
 
         return ResponseEntity.ok(new TokenResponse(access));
     }
@@ -237,6 +238,13 @@ public class AuthController {
         boolean ok = passwordResetService.resetPassword(dto.token(), dto.newPassword());
         return ok ? ResponseEntity.ok().build()
                 : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token.");
+    }
+
+    private static Duration refreshLifetimeFor(User user) {
+        String email = user.getEmail();
+        return email != null && email.startsWith("demo+") && email.endsWith("@example.invalid")
+                ? Duration.ofHours(24)
+                : Duration.ofDays(14);
     }
 
     // SHA-256 -> Base64URL (ohne Padding) als String

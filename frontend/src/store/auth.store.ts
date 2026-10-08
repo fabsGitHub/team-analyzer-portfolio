@@ -2,6 +2,7 @@
 import { reactive } from 'vue'
 import { useAuthToken } from '@/api/client'
 import * as AuthApi from '@/api/auth.api'
+import * as DemoApi from '@/api/demo.api'
 import { i18n } from '@/i18n'
 
 const TOAST_AUTOHIDE_MS = 2500 as const
@@ -93,6 +94,20 @@ export function useAuthStore() {
     toast($t('toast.signedin'), 'success')
   }
 
+  async function startDemo() {
+    const session = await DemoApi.createDemoSession()
+    state.token = session.accessToken
+    try {
+      state.user = await AuthApi.me()
+    } catch (error) {
+      state.token = ''
+      state.user = null
+      throw error
+    }
+    toast('Your private sample workspace is ready.', 'success')
+    return session.surveyId
+  }
+
   async function register(email: string, password: string) {
     await AuthApi.register(email, password)
     toast($t('auth.check_mail'), 'info')
@@ -139,6 +154,7 @@ export function useAuthStore() {
     init,
     login,
     register,
+    startDemo,
     logout,
     resetPassword,
     refreshUser,

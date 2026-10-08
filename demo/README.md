@@ -1,13 +1,7 @@
-# Team Analyzer demo
+# Team Analyzer demo assets
 
-This is a static portfolio demo for [Team Analyzer](https://github.com/fabsGitHub/team-analyzer).
+The production demo is the full-stack application in `frontend/`, served with the Spring Boot API from `backend/` through Vercel Services.
 
-## Local preview
+This directory contains the earlier static portfolio mock-up. Its fictional content is not connected to the database and is no longer the Vercel project root.
 
-Open \`index.html\` in a browser, or serve this directory with any static file server.
-
-## Vercel
-
-The Vercel project uses this directory as its root. It serves \`index.html\` directly and requires no build command, backend, database, environment variables, or account setup.
-
-All metrics and survey prompts on this page are fictional sample content. The sample participant flow keeps answers in page memory only; it does not persist or submit them. The CSV export contains aggregate sample data only.
+The source repository is [fabsGitHub/team-analyzer-portfolio](https://github.com/fabsGitHub/team-analyzer-portfolio).

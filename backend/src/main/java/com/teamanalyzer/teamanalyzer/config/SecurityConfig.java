@@ -36,7 +36,8 @@ public class SecurityConfig {
   private static final String[] PUBLIC_ENDPOINTS = {
       "/error",
       "/actuator/health",
-      "/api/auth/**"
+      "/api/auth/**",
+      "/api/demo/session"
   };
 
   private static final String[] SURVEY_PUBLIC_ENDPOINTS_GET = {
