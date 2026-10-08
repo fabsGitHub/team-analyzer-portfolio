@@ -4,6 +4,7 @@ import {
   createWebHistory,
   type RouteLocationNormalized,
 } from 'vue-router'
+import LandingView from '@/views/LandingView.vue'
 import AuthView from '@/views/AuthView.vue'
 import TutorialView from '@/views/TutorialView.vue'
 import VerifyView from '@/views/VerifyView.vue'
@@ -24,7 +25,7 @@ import * as AuthApi from '@/api/auth.api'
 import { useAuthStore } from '@/store'
 
 const routes = [
-  { path: '/', redirect: '/auth' },
+  { path: '/', name: 'Landing', component: LandingView },
 
   // /auth: wenn Session automatisch möglich -> direkt /my/tokens
   {
@@ -54,9 +55,6 @@ const routes = [
   { path: '/help', component: HelpView },
   { path: '/shortcuts', component: ShortcutsView },
   { path: '/about', component: AboutView },
-
-  // Public 404 -> /auth
-  { path: '/:pathMatch(.*)*', redirect: '/auth' },
 
   // Public Survey (mit Token im Query erlauben wir anonymen Zugriff)
   { path: '/surveys/:id', name: 'Survey', component: SurveyFillView },
@@ -95,11 +93,15 @@ const routes = [
     component: () => import('@/views/SurveyResultsView.vue'),
     meta: { requiresRole: ['LEADER'] },
   },
+
+  // Public 404 -> /auth. Keep this after concrete routes so they remain reachable.
+  { path: '/:pathMatch(.*)*', redirect: '/auth' },
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })
 
 const PUBLIC_PATHS = new Set<string>([
+  '/',
   '/auth',
   '/auth/reset',
   '/verify',
