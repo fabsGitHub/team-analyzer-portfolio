@@ -1,12 +1,13 @@
-// backend/src/main/java/com/teamanalyzer/teamanalyzer/infra/mail/SpringMailSenderAdapter.java
 package com.teamanalyzer.teamanalyzer.infra.mail;
 
 import com.teamanalyzer.teamanalyzer.port.EmailSender;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(name = "app.mail.provider", havingValue = "smtp", matchIfMissing = true)
 public class SpringMailSenderAdapter implements EmailSender {
   private final JavaMailSender delegate;
 

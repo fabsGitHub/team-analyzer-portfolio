@@ -100,6 +100,7 @@ const AUTH_PATHS = new Set([
   '/auth/register',
   '/auth/refresh',
   '/auth/logout',
+  '/demo/session',
 ])
 function isAuthEndpoint(url?: string | null): boolean {
   const u = parseUrl(url)

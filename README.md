@@ -10,7 +10,7 @@ This is a portfolio and learning project. It is not presented as a production-au
 
 ## Interactive demo
 
-The [`demo/` directory](demo/) contains a standalone preview of the leader insights dashboard and participant survey flow. It uses fictional sample content and does not connect to the backend, persist survey answers, or send data.
+The Vercel demo runs the Vue application from `frontend/` and routes `/api` to the Spring Boot service in `backend/`. Visitors can start a private demo workspace with a seeded team, an editable survey, and 18 fictional responses. Each workspace is isolated and expires after 24 hours. The older static mock-up is retained under `demo/` as design reference only.
 ## What it demonstrates
 
 - A Java 21 / Spring Boot API with Spring Security, JPA, and Flyway migrations.
@@ -123,3 +123,17 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE). The lice
 ## Further development
 
 Useful next steps for this portfolio project are broader automated coverage around authentication and authorization, an explicit production deployment guide, and operational monitoring.
+
+
+## Vercel full-stack deployment
+
+The root `vercel.json` composes the Vite frontend and the backend container. Configure the Vercel project with the repository `fabsGitHub/team-analyzer-portfolio`, root directory `.`, and these server-only environment variables:
+
+- `SPRING_PROFILES_ACTIVE=prod`
+- `MYSQL_HOST`, `MYSQL_PORT=4000`, `MYSQL_DATABASE`, `MYSQL_USER`, and `MYSQL_PASSWORD` for TiDB Cloud SQL
+- `APP_JWT_SECRET_BASE64`, `EMAIL_VERIFY_HMAC_SECRET`, and `DOWNLOAD_TOKEN_HMAC_SECRET`
+- `APP_FRONTEND_BASE_URL` set to the demo's canonical HTTPS origin
+- `APP_DEMO_ENABLED=true`
+- `APP_MAIL_PROVIDER=brevo-api`, `BREVO_API_KEY`, and `SPRING_MAIL_FROM` for a verified Brevo sender
+
+Keep credentials in Vercel encrypted environment variables. The TiDB Cloud management API key is not a MySQL/JDBC password. The old `demo/` directory is not the Vercel root.

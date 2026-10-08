@@ -1,7 +1,14 @@
-# ---------- default (dev) ----------
+# ---------- default (development) ----------
 spring:
   profiles:
     active: mysql
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+  datasource:
+    hikari:
+      maximum-pool-size: ${MYSQL_POOL_SIZE:5}
+      minimum-idle: 0
   jpa:
     open-in-view: false
     hibernate:
@@ -17,7 +24,7 @@ spring:
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 app:
   auth:
@@ -25,15 +32,22 @@ app:
     log-verification-link: ${LOG_VERIFICATION_LINK:false}
     email-verify-ttl: 60m
     hmac-secret: "${EMAIL_VERIFY_HMAC_SECRET}"
-  frontend-base-url: "http://localhost:5173"
+  frontend-base-url: "${APP_FRONTEND_BASE_URL:http://localhost:5173}"
   verify-endpoint-path: "/verify"
   download-token-secret: "${DOWNLOAD_TOKEN_HMAC_SECRET}"
   jwt:
     secret: ${APP_JWT_SECRET_BASE64}
+  demo:
+    enabled: ${APP_DEMO_ENABLED:false}
+    cleanup-interval-ms: ${APP_DEMO_CLEANUP_INTERVAL_MS:3600000}
   mail:
-    enabled: false # <— Dev: NIE mailen
+    enabled: false
+    provider: ${APP_MAIL_PROVIDER:smtp}
+    api-key: ${BREVO_API_KEY:}
+    from: "${SPRING_MAIL_FROM:}"
+    from-name: "${SPRING_MAIL_FROM_NAME:Team Analyzer}"
   cookies:
-    secure: false # <— passt zum Code (@Value app.cookies.secure)
+    secure: false
 
 logging:
   level:
@@ -58,13 +72,13 @@ spring:
       ddl-auto: validate
     show-sql: false
   flyway:
-    locations: classpath:db/migration/mysql
+    locations: classpath:db/migration
     clean-disabled: true
     validate-migration-naming: true
 
 app:
   mail:
-    enabled: false # <— auch im mysql-Profil aus
+    enabled: false
 
 logging:
   level:
@@ -72,39 +86,48 @@ logging:
     "[org.springframework.security]": INFO
 
 ---
-# ---------- prod profile ----------
+# ---------- production profile ----------
 spring:
   config:
     activate:
       on-profile: prod
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/teambase?useSSL=true&serverTimezone=UTC
-    username: ${MYSQL_USER}
-    password: ${MYSQL_PASSWORD}
+    url: "jdbc:mysql://${MYSQL_HOST:${TIDB_HOST:localhost}}:${MYSQL_PORT:${TIDB_PORT:4000}}/${MYSQL_DATABASE:${TIDB_DATABASE:teambase}}?sslMode=${MYSQL_SSL_MODE:VERIFY_IDENTITY}&serverTimezone=UTC"
+    username: "${MYSQL_USER:${TIDB_USER:}}"
+    password: "${MYSQL_PASSWORD:${TIDB_PASSWORD:}}"
     driverClassName: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
   flyway:
-    locations: classpath:db/migration/mysql
+    locations: classpath:db/migration
     clean-disabled: true
     validate-migration-naming: true
   mail:
-    host: ${SPRING_MAIL_HOST}
+    host: ${SPRING_MAIL_HOST:smtp-relay.brevo.com}
     port: ${SPRING_MAIL_PORT:587}
-    username: "${SPRING_MAIL_USERNAME}"
-    password: "${SPRING_MAIL_PASSWORD}"
+    username: "${SPRING_MAIL_USERNAME:}"
+    password: "${SPRING_MAIL_PASSWORD:}"
     properties:
       "[mail.smtp.auth]": true
       "[mail.smtp.starttls.enable]": true
+      "[mail.smtp.connectiontimeout]": 10000
+      "[mail.smtp.timeout]": 10000
+      "[mail.smtp.writetimeout]": 10000
 
 server:
   forward-headers-strategy: framework
 
 app:
   mail:
-    enabled: true # <— only when real SMTP settings are supplied
+    enabled: true
+    provider: ${APP_MAIL_PROVIDER:brevo-api}
+    api-key: ${BREVO_API_KEY:}
+    from: "${SPRING_MAIL_FROM:}"
+    from-name: "${SPRING_MAIL_FROM_NAME:Team Analyzer}"
+  demo:
+    enabled: ${APP_DEMO_ENABLED:false}
   cookies:
     secure: true
 
