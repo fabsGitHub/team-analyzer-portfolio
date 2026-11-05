@@ -39,6 +39,7 @@ public class SurveyService {
     private final SurveyResponseRepository responseRepo;
     private final TeamMemberRepository tmRepo;
     private final TokenService tokenService;
+    private final DemoQuotaService demoQuotas;
     private final DigestService digest;
     private final AppClock clock;
 
@@ -53,6 +54,9 @@ public class SurveyService {
         if (qTexts == null || qTexts.size() != QUESTION_COUNT) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "error.surveys.exactQuestionCount");
         }
+
+        // Demo accounts are capped per workspace; everyone else passes straight through.
+        demoQuotas.claimSurvey(leaderId, teamId);
 
         var s = Survey.create(Team.ref(teamId), leaderId, title);
         surveyRepo.save(s);

@@ -12,7 +12,7 @@
                 <!-- Titel + Team + Anlegen -->
                 <div class="grid">
                     <input v-model="title" class="input" :placeholder="t('surveys.create.fields.title')" required
-                        :aria-label="t('surveys.create.fields.title')" />
+                        :maxlength="MAX_TITLE_LENGTH" :aria-label="t('surveys.create.fields.title')" />
                     <select v-model="teamId" class="input select" required
                         :aria-label="t('surveys.create.fields.team')">
                         <option v-for="team in myTeams" :key="team.id" :value="team.id">
@@ -33,6 +33,7 @@
                             <span class="meta w-0" style="min-width: 3ch;">{{ i }}.</span>
                             <input v-model="questions[i - 1]" class="input"
                                 :placeholder="t('surveys.create.questions.placeholder', { i })" required
+                                :maxlength="MAX_QUESTION_LENGTH"
                                 :aria-label="t('surveys.create.questions.placeholder', { i })" />
                         </label>
                     </div>
@@ -49,6 +50,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useTeamsStore, useSurveysStore } from '@/store'
 import { ensureTokensForTeam } from '@/api/surveys.api'
+import { apiErrorMessage } from '@/api/errors'
 import type { TeamLite } from '@/types'
 
 const { t } = useI18n()
@@ -63,8 +65,12 @@ const questions = ref<string[]>(['', '', '', '', ''])
 const error = ref<string | null>(null)
 const busy = ref(false)
 
-function messageOf(e: any, fallback: string): string {
-    return e?.response?.data?.detail || e?.response?.data?.message || e?.message || fallback
+// Same limits as the API (CreateSurveyRequestDto) and the database columns.
+const MAX_TITLE_LENGTH = 300
+const MAX_QUESTION_LENGTH = 1000
+
+function messageOf(e: unknown, fallback: string): string {
+    return apiErrorMessage(e, t, fallback)
 }
 
 onMounted(async () => {

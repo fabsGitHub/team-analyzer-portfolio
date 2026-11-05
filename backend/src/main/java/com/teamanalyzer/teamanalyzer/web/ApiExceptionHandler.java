@@ -26,6 +26,7 @@ import java.net.URI;
 import java.util.*;
 
 import com.teamanalyzer.teamanalyzer.port.AppClock;
+import com.teamanalyzer.teamanalyzer.service.DemoLimitExceededException;
 
 @RestControllerAdvice
 @Slf4j
@@ -72,6 +73,23 @@ public class ApiExceptionHandler {
         if (includeStacktrace && status.is5xxServerError())
             body.setProperty("exception", ex.toString());
         return respond(status, body);
+    }
+
+    /** Demo limits carry a stable {@code code} and the {@code limit}, so the frontend can translate them. */
+    @ExceptionHandler(DemoLimitExceededException.class)
+    public ResponseEntity<ProblemDetail> handleDemoLimit(DemoLimitExceededException ex, HttpServletRequest req) {
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+        ProblemDetail body = pd(status, "Demo limit reached", ex.getReason(), req);
+        body.setProperty("code", ex.code());
+        body.setProperty("limit", ex.limit());
+        ResponseEntity.BodyBuilder response = ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON);
+        if (ex.retryAfter() != null) {
+            // Whole seconds, rounded up, and at least one.
+            long seconds = Math.max(1, (ex.retryAfter().toMillis() + 999) / 1000);
+            response.header(HttpHeaders.RETRY_AFTER, Long.toString(seconds));
+        }
+        return response.body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

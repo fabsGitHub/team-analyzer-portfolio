@@ -122,6 +122,7 @@ The backend reads its configuration from environment variables. Secrets have no 
 | `APP_CORS_ALLOWED_ORIGINS` | no | Comma-separated origins allowed to call the API cross-origin (default: `APP_FRONTEND_BASE_URL`); not needed when the frontend and API share an origin |
 | `APP_BOOTSTRAP_ADMIN_EMAIL` | no | This address becomes administrator once it is registered and confirmed |
 | `APP_DEMO_ENABLED` | no | Enables `POST /api/demo/session` ("Try the live demo"): each call creates a private sample workspace that is deleted after 24 hours (default `false`) |
+| `APP_DEMO_MAX_*` | no | Limits for demo visitors, with defaults; see [Demo workspaces](docs/VERCEL_DEPLOYMENT.md#limits) |
 | `LOG_VERIFICATION_LINK` | no | Print one-time links to the log when mail is disabled (local demos only) |
 | `PORT` | no | HTTP port of the API (default `8080`) |
 
@@ -154,13 +155,15 @@ cd frontend && pnpm install --frozen-lockfile && pnpm exec cypress install && pn
 - Download links are HMAC-signed, scoped to a single survey and valid for five minutes.
 - The nginx container sends a strict Content Security Policy and related security headers.
 - The Compose stack is meant for local development. A real deployment also needs TLS, mail delivery, secret management, backups, monitoring and an operational review.
-- Demo workspaces belong to generated accounts (`demo+<id>@example.invalid`) with a random password that is never shown; the browser gets an access token and a 24-hour refresh cookie. Their teams, surveys and accounts are deleted after 24 hours, when a new demo starts and by an hourly job. Starting demos is limited per IP address.
+- Demo workspaces belong to generated accounts (`demo+<id>@example.invalid`) with a random password that is never shown; the browser gets an access token and a 24-hour refresh cookie. Their teams, surveys and accounts are deleted after 24 hours, when a new demo starts and by an hourly job.
+- Anyone can start a demo, so demo visitors are limited (see the [deployment guide](docs/VERCEL_DEPLOYMENT.md#limits)): demo starts per IP address and API instance, demo starts per hour and demo workspaces at the same time (both counted in the database, across instances), and surveys and participation tokens per workspace. A demo session that is refreshed replaces its refresh token row. Demo addresses cannot be registered. Survey titles and questions are limited to their column lengths for every account.
+- With demo mode off, existing demo sessions end: their access and refresh tokens are refused, and the hourly cleanup still deletes their workspaces after 24 hours.
 
 ## Roadmap
 
 - User lookup by email in the team administration (currently user IDs are entered directly)
 - Rate limiting for authentication endpoints
-- Rate limiting shared across instances for demo sessions (the current per-IP limit is kept in memory per backend instance)
+- A per-IP demo limit shared across instances (the per-IP count is kept in memory per backend instance; the hourly and workspace limits are already counted in the database)
 
 ## License
 

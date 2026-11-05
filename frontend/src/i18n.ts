@@ -32,6 +32,13 @@ const de = {
     gettingStartedBody: 'Die Live-Demo meldet dich ohne Registrierung in einem eigenen Beispiel-Arbeitsbereich an. Für ein eigenes Konto registrierst du dich mit deiner E-Mail-Adresse und bestätigst sie über den Link, den du erhältst; ein Administrationskonto legt anschließend Teams an und weist Teamleitungen zu.',
     privacyNote: 'Dies ist ein Portfolio- und Lernprojekt. Bitte übermittle auf der öffentlichen Bereitstellung keine vertraulichen Rückmeldungen oder echten Organisationsdaten.',
   },
+  demoLimits: {
+    address: 'Aus diesem Netzwerk wurden in der letzten Stunde zu viele Demos gestartet. Bitte versuche es später noch einmal.',
+    hourly: 'In der letzten Stunde wurden sehr viele Demos gestartet. Bitte versuche es etwas später noch einmal.',
+    capacity: 'Alle Demo-Arbeitsbereiche sind gerade belegt. Bitte versuche es in einer Stunde noch einmal oder registriere dich für ein eigenes Konto.',
+    surveys: 'Ein Demo-Arbeitsbereich kann höchstens {limit} Umfragen enthalten. Für weitere Umfragen registriere dich bitte für ein eigenes Konto.',
+    tokens: 'Eine Demo-Umfrage kann höchstens {limit} Teilnahme-Tokens haben, erneuerte mitgezählt.',
+  },
   helpPage: {
     intro: 'Team Analyzer organisiert strukturiertes Feedback über kurze Teamumfragen. Verfügbare Bereiche hängen von deinem Kontostatus und deiner Rolle ab.',
     accountTitle: 'Konto einrichten',
@@ -400,6 +407,13 @@ const en = {
     gettingStartedTitle: 'Explore the application',
     gettingStartedBody: 'The live demo signs you in to a private sample workspace without registration. For your own account, register with your email address and confirm it through the link you receive; an administrator then creates teams and appoints team leads.',
     privacyNote: 'This is a portfolio and learning project. Do not submit confidential feedback or real organizational data on the public deployment.',
+  },
+  demoLimits: {
+    address: 'Too many demos were started from this network in the last hour. Please try again later.',
+    hourly: 'Many demos were started in the last hour. Please try again a little later.',
+    capacity: 'All demo workspaces are in use right now. Please try again in an hour, or register for your own account.',
+    surveys: 'A demo workspace can hold up to {limit} surveys. To create more, please register for your own account.',
+    tokens: 'A demo survey can have up to {limit} participation tokens, renewed ones included.',
   },
   helpPage: {
     intro: 'Team Analyzer organizes structured feedback through short team surveys. Available areas depend on your account status and role.',

@@ -25,6 +25,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByEmail(String email);
 
+    /** Whether the account's email matches a SQL LIKE pattern, e.g. {@code DemoAccounts.EMAIL_LIKE}. */
+    boolean existsByIdAndEmailLike(UUID id, String emailPattern);
+
     /** Role check without loading the (lazy) role collection. */
     boolean existsByIdAndRolesContaining(UUID id, com.teamanalyzer.teamanalyzer.domain.Role role);
 

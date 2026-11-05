@@ -30,7 +30,7 @@ The live demo at <https://team-analyzer-demo.vercel.app> runs this setup with `A
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `SPRING_MAIL_PORT` | Optional SMTP configuration when `APP_MAIL_PROVIDER=smtp`. The SMTP password must be an SMTP key, not an API key. Port defaults to `587` with authentication and STARTTLS enabled. |
 | `APP_BOOTSTRAP_ADMIN_EMAIL` | The exact email address that should receive the first administrator role, after verification. |
 | `LOG_VERIFICATION_LINK=false` | Keep verification-token links out of runtime logs. |
-| `APP_DEMO_ENABLED` | `true` enables "Try the live demo" (`POST /api/demo/session`): each call creates a private sample workspace that is deleted after 24 hours. Defaults to `false`. |
+| `APP_DEMO_ENABLED` | `true` enables "Try the live demo" (`POST /api/demo/session`): each call creates a private sample workspace that is deleted after 24 hours. Defaults to `false`. The limits for demo visitors have defaults and optional variables, see [Demo workspaces](#demo-workspaces). |
 | `PORT=8080` | Vercel container port. |
 
 Generate new, separate signing secrets for each deployment. Do not reuse any value from this repository's history. Use Vercel's environment-variable secret handling for passwords and signing keys.
@@ -51,7 +51,30 @@ For reliable delivery to Gmail, Yahoo, and Microsoft inboxes, authenticate the s
 
 ## Demo workspaces
 
-With `APP_DEMO_ENABLED=true`, every "Try the live demo" click creates a generated account (`demo+<id>@example.invalid`, random password, never shown), a team led by that account, a survey and 18 fictional responses, and signs the browser in for up to 24 hours. Expired workspaces are deleted when the next demo starts and by an hourly job inside the API (`APP_DEMO_CLEANUP_INTERVAL_MS`). Each API instance allows 20 demo starts per client IP address and hour; the limit is kept in memory, so it resets when the container restarts and is not shared between instances.
+With `APP_DEMO_ENABLED=true`, every "Try the live demo" click creates a generated account (`demo+<id>@example.invalid`, random password, never shown), a team led by that account, a survey and 18 fictional responses, and signs the browser in for up to 24 hours. Expired workspaces are deleted when the next demo starts and by an hourly job inside the API (`APP_DEMO_CLEANUP_INTERVAL_MS`).
+
+### Limits
+
+Anyone can start a demo and use its token, so the API limits what demo visitors can create. When a limit is reached, the API answers with a problem detail whose `code` names the limit (and `limit` gives its value); the app shows a translated message. Answers with status 429 also carry a `Retry-After` header.
+
+| Limit | Default | Variable | Answer |
+| --- | --- | --- | --- |
+| Demo starts per client address and hour, per API instance | 20 | `APP_DEMO_MAX_SESSIONS_PER_ADDRESS_PER_HOUR` | 429, `demo.limit.address` |
+| Demo starts per hour, across all instances | 100 | `APP_DEMO_MAX_SESSIONS_PER_HOUR` | 429, `demo.limit.hourly` |
+| Demo workspaces at the same time | 300 | `APP_DEMO_MAX_LIVE_WORKSPACES` | 429, `demo.limit.capacity` |
+| Surveys per workspace, the seeded one included | 10 | `APP_DEMO_MAX_SURVEYS_PER_WORKSPACE` | 403, `demo.limit.surveys` |
+| Participation tokens per demo survey, renewed ones included | 20 | `APP_DEMO_MAX_TOKENS_PER_SURVEY` | 403, `demo.limit.tokens` |
+
+- **Per address:** the client address comes from `x-vercel-forwarded-for` (set by Vercel), then `X-Real-IP` (set by the nginx container), then the connection's address. The count is kept in memory, so it is per instance and resets when the container restarts. It tracks at most `APP_DEMO_TRACKED_ADDRESSES` addresses (default 10,000); when that many are active, the address seen least recently is forgotten. New visitors are never turned away because many other addresses were seen.
+- **Per hour and at the same time:** both are counted in the database, so they hold across instances and restarts. Every demo account in the database counts as a workspace, including expired ones that cleanup has not removed yet: if cleanup falls behind, new demos stop instead of the tables growing. Starts are not serialised, so a burst of simultaneous starts can pass these two limits by the number of requests in flight.
+- **Per workspace:** checked in the transaction that writes the survey or token, with the workspace's team row locked, so simultaneous requests cannot pass them. Each token submits at most one response, so the token limit also limits responses. With the defaults, a workspace holds at most about 1,600 rows (10 surveys with 50 questions, 200 tokens, 218 responses with 1,090 answers), so 300 workspaces stay below 500,000 rows.
+- **For every account:** survey titles are limited to 300 characters and questions to 1,000 (the column lengths); longer input gets 400 instead of a database error.
+- Refreshing a demo session replaces its refresh token row instead of keeping a revoked one, so refreshing in a loop does not add rows.
+- Addresses of the form `demo+…@example.invalid` cannot be registered, so the live-workspace limit cannot be filled through registration.
+
+### Switching the demo off
+
+With `APP_DEMO_ENABLED=false`, `POST /api/demo/session` returns 404 and existing demo sessions end: access tokens of demo accounts no longer sign anyone in, and their refresh tokens are refused and revoked. The hourly cleanup keeps running, so the remaining workspaces are deleted 24 hours after they were created. Switching the demo back on does not revive sessions whose refresh token was refused in the meantime.
 
 ## Data and project scope
 
