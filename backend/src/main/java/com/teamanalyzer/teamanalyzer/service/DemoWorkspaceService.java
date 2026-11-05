@@ -1,7 +1,5 @@
 package com.teamanalyzer.teamanalyzer.service;
 
-import java.sql.Timestamp;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(prefix = "app.demo", name = "enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class DemoWorkspaceService {
-  private static final Duration WORKSPACE_TTL = Duration.ofHours(24);
+  /**
+   * Workspaces expire 24 hours after their account was created. The cutoff is computed by the
+   * database, in the same time zone as the TIMESTAMP column, so the JVM's zone cannot skew it.
+   */
+  private static final String EXPIRED = "created_at < CURRENT_TIMESTAMP - INTERVAL 24 HOUR";
   private static final String DEMO_EMAIL_PATTERN = "demo+%@example.invalid";
   private static final List<String> QUESTIONS = List.of(
       "Our team is clear about its most important priorities.",
@@ -111,7 +113,6 @@ public class DemoWorkspaceService {
   @Scheduled(fixedDelayString = "${app.demo.cleanup-interval-ms:3600000}")
   @Transactional
   public void cleanupExpiredWorkspaces() {
-    Timestamp cutoff = Timestamp.from(Instant.now().minus(WORKSPACE_TTL));
     jdbc.update("""
         DELETE FROM teams
          WHERE id IN (
@@ -120,7 +121,7 @@ public class DemoWorkspaceService {
                FROM team_members tm
                JOIN users u ON u.id = tm.user_id
               WHERE u.email LIKE ?
-                AND u.created_at < ?
+                AND u.%s
                 AND NOT EXISTS (
                   SELECT 1
                     FROM team_members other
@@ -129,14 +130,14 @@ public class DemoWorkspaceService {
                      AND ou.email NOT LIKE ?)
            ) expired_demo_teams
          )
-        """, DEMO_EMAIL_PATTERN, cutoff, DEMO_EMAIL_PATTERN);
+        """.formatted(EXPIRED), DEMO_EMAIL_PATTERN, DEMO_EMAIL_PATTERN);
     // A demo account that still owns a survey in a kept team stays until that survey is gone.
     jdbc.update("""
         DELETE FROM users
          WHERE email LIKE ?
-           AND created_at < ?
+           AND %s
            AND NOT EXISTS (SELECT 1 FROM surveys s WHERE s.created_by = users.id)
-        """, DEMO_EMAIL_PATTERN, cutoff);
+        """.formatted(EXPIRED), DEMO_EMAIL_PATTERN);
   }
 
   public record DemoWorkspace(User user, UUID surveyId) {

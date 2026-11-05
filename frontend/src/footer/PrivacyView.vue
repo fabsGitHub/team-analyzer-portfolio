@@ -21,7 +21,7 @@
     <section>
       <h2>{{ t('privacyPage.contactTitle') }}</h2>
       <p>{{ t('privacyPage.contact') }}</p>
-      <a href="https://github.com/fabsGitHub/team-analyzer" target="_blank" rel="noopener noreferrer">
+      <a :href="SOURCE_REPOSITORY_URL" target="_blank" rel="noopener noreferrer">
         {{ t('privacyPage.contactLink') }}
       </a>
     </section>
@@ -30,6 +30,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { SOURCE_REPOSITORY_URL } from '@/project'
+
 const { t } = useI18n()
 </script>
 

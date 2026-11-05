@@ -66,7 +66,10 @@ public class V3__users_email_binary_collation extends BaseJavaMigration {
                 .toList();
         if (!conflicts.isEmpty()) {
             throw new FlywayException("V3 stopped before changing anything: these accounts would share one email"
-                    + " address. Merge or delete the duplicates (users.id in hex), then run the migration again:\n  "
+                    + " address. Merge or delete the duplicates (users.id in hex). MySQL and TiDB cannot roll back"
+                    + " DDL, so Flyway records this attempt as failed; afterwards remove that record with"
+                    + " \"DELETE FROM flyway_schema_history WHERE version = '3' AND success = 0\" (or run flyway"
+                    + " repair) and start the application again:\n  "
                     + String.join("\n  ", conflicts));
         }
 

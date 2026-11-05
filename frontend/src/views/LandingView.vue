@@ -13,7 +13,7 @@
         </div>
         <p class="demo-note">{{ t('landing.demoNote') }}</p>
         <p v-if="error" class="demo-error" role="alert">{{ error }}</p>
-        <a class="source-link" href="https://github.com/fabsGitHub/team-analyzer-portfolio" target="_blank" rel="noopener noreferrer">
+        <a class="source-link" :href="SOURCE_REPOSITORY_URL" target="_blank" rel="noopener noreferrer">
           {{ t('landing.source') }}
         </a>
       </div>
@@ -79,6 +79,7 @@ import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store'
+import { SOURCE_REPOSITORY_URL } from '@/project'
 
 const { t } = useI18n()
 const auth = useAuthStore()

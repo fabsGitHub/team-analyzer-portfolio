@@ -145,6 +145,17 @@ class AuthFlowIntegrationTest {
     }
 
     @Test
+    void unknown_endpoints_are_404_not_server_errors() throws Exception {
+        mvc.perform(post("/api/auth/no-such-endpoint"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+        // The demo endpoint is public but absent while demo mode is off (the default), so the
+        // landing page can tell "not enabled" apart from "service unavailable".
+        mvc.perform(post("/api/demo/session"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void health_endpoint_is_public() throws Exception {
         mvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())

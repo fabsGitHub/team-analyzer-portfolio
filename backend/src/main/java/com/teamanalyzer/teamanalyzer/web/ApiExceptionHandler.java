@@ -17,6 +17,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 
@@ -155,6 +157,14 @@ public class ApiExceptionHandler {
             HttpServletRequest req) {
         HttpStatus status = HttpStatus.METHOD_NOT_ALLOWED;
         ProblemDetail body = pd(status, "Method not allowed", ex.getMessage(), req);
+        return respond(status, body);
+    }
+
+    /** An unknown path (or a feature that is switched off, like the demo) is a 404, not a server error. */
+    @ExceptionHandler({ NoResourceFoundException.class, NoHandlerFoundException.class })
+    public ResponseEntity<ProblemDetail> handleNoHandler(Exception ex, HttpServletRequest req) {
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        ProblemDetail body = pd(status, "Not found", "No endpoint " + req.getMethod() + " " + req.getRequestURI() + ".", req);
         return respond(status, body);
     }
 

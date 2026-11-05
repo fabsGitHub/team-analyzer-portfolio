@@ -18,7 +18,7 @@ The live demo at <https://team-analyzer-demo.vercel.app> runs this setup with `A
 | --- | --- |
 | `SPRING_PROFILES_ACTIVE=prod` | Enables the production Spring profile. |
 | `APP_FRONTEND_BASE_URL` | Public Vercel URL used in verification links. |
-| `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` | MySQL-compatible database connection. `MYSQL_PORT` defaults to `3306`; SSL identity verification is enabled by default. |
+| `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` | MySQL-compatible database connection. `MYSQL_PORT` defaults to `4000`, the TiDB Cloud port; set it to `3306` for a standard MySQL server. SSL identity verification is enabled by default. |
 | `TIDB_HOST`, `TIDB_PORT`, `TIDB_DATABASE`, `TIDB_USER`, `TIDB_PASSWORD` | Alternative connection names accepted for TiDB Cloud. Standard `MYSQL_*` variables take precedence when both are set. |
 | `MYSQL_SSL_MODE` | Optional MySQL Connector/J SSL mode. Defaults to `VERIFY_IDENTITY`. |
 | `APP_JWT_SECRET_BASE64` | Fresh Base64-encoded JWT signing key with at least 32 random bytes. |

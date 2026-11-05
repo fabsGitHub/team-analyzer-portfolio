@@ -3,7 +3,8 @@
 spring:
   datasource:
     # Testcontainers starts a throwaway MySQL server for the test run.
-    url: jdbc:tc:mysql:8.4.6:///teambase
+    # UTC like the real datasources, so results do not depend on the developer machine's time zone.
+    url: jdbc:tc:mysql:8.4.6:///teambase?serverTimezone=UTC
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
 
 app:

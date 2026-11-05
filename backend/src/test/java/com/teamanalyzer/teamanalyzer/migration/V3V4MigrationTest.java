@@ -69,6 +69,15 @@ class V3V4MigrationTest {
 
         assertThat(collation(db)).isEqualTo("utf8mb4_0900_ai_ci"); // nothing was altered
         assertThat(emails(db)).containsExactlyInAnyOrder("carol@example.test", "carol@example.test ");
+
+        // The recovery the message describes: remove the duplicate and the failed history record.
+        try (Connection c = connect(db); Statement st = c.createStatement()) {
+            st.execute("delete from users where email = 'carol@example.test '");
+            st.execute("DELETE FROM flyway_schema_history WHERE version = '3' AND success = 0");
+        }
+        flyway(db, null).migrate();
+        assertThat(emails(db)).containsExactly("carol@example.test");
+        assertThat(collation(db)).isEqualTo("utf8mb4_0900_bin");
     }
 
     @Test

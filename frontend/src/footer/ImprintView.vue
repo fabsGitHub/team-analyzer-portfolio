@@ -4,7 +4,7 @@
     <p>{{ t('imprintPage.description') }}</p>
     <h2>{{ t('imprintPage.sourceHeading') }}</h2>
     <p>
-      <a href="https://github.com/fabsGitHub/team-analyzer" target="_blank" rel="noopener noreferrer">
+      <a :href="SOURCE_REPOSITORY_URL" target="_blank" rel="noopener noreferrer">
         {{ t('imprintPage.sourceLink') }}
       </a>
     </p>
@@ -15,6 +15,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { SOURCE_REPOSITORY_URL } from '@/project'
+
 const { t } = useI18n()
 </script>
 
