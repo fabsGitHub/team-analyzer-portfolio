@@ -5,6 +5,7 @@ import com.teamanalyzer.teamanalyzer.domain.User;
 import com.teamanalyzer.teamanalyzer.port.AppClock;
 import com.teamanalyzer.teamanalyzer.repo.RefreshTokenRepository;
 import com.teamanalyzer.teamanalyzer.repo.UserRepository;
+import com.teamanalyzer.teamanalyzer.service.AccountVerificationService;
 import com.teamanalyzer.teamanalyzer.service.EmailVerifyTokenService;
 import com.teamanalyzer.teamanalyzer.service.JwtService;
 import com.teamanalyzer.teamanalyzer.service.MailService;
@@ -13,6 +14,7 @@ import com.teamanalyzer.teamanalyzer.web.dto.ConfirmPasswordDto;
 import com.teamanalyzer.teamanalyzer.web.dto.LoginDto;
 import com.teamanalyzer.teamanalyzer.web.dto.RegisterDto;
 import com.teamanalyzer.teamanalyzer.web.dto.ResetPasswordDto;
+import com.teamanalyzer.teamanalyzer.web.dto.VerifyEmailDto;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,6 +22,8 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.*;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,13 +35,13 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+    private static final String INVALID_LOGIN = "Invalid email or password, or the email address is not confirmed yet.";
 
     private final UserRepository users;
     private final RefreshTokenRepository tokens;
@@ -50,6 +54,7 @@ public class AuthController {
 
     private final String frontendBaseUrl;
     private final String verifyEndpointPath;
+    private final AccountVerificationService accountVerification;
 
     @Value("${app.mail.enabled:false}")
     private boolean mailEnabled;
@@ -69,6 +74,7 @@ public class AuthController {
             MailService mail,
             PasswordResetService passwordResetService,
             @Value("${app.frontend-base-url}") String frontendBaseUrl,
+            AccountVerificationService accountVerification,
             @Value("${app.verify-endpoint-path}") String verifyEndpointPath,
             AppClock clock) {
         this.users = users;
@@ -78,7 +84,8 @@ public class AuthController {
         this.emailTokenSvc = emailTokenSvc;
         this.mail = mail;
         this.passwordResetService = passwordResetService;
-        this.frontendBaseUrl = frontendBaseUrl;
+        this.frontendBaseUrl = frontendBaseUrl.replaceAll("/+$", "");
+        this.accountVerification = accountVerification;
         this.verifyEndpointPath = verifyEndpointPath;
         this.clock = clock;
     }
@@ -96,33 +103,52 @@ public class AuthController {
     // --- Register ---
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterDto dto) {
-        String email = dto.email().trim().toLowerCase();
+        String email = User.normalizeEmail(dto.email());
+        String passwordHash = enc.encode(dto.password());
 
-        if (users.existsByEmail(email))
-            return ResponseEntity.status(409).build();
-
-        var u = User.of(email, enc.encode(dto.password()));
-        u.setEnabled(false);
-        users.save(u);
+        var existing = users.findByEmail(email);
+        User u;
+        if (existing.isPresent()) {
+            if (existing.get().isEnabled()) {
+                return ResponseEntity.status(409).build();
+            }
+            // Unconfirmed address: a new registration replaces the password, so nobody can block
+            // an address by registering it first. Confirming still requires the mailbox link
+            // *and* the current password, so this cannot be used to take over the account.
+            u = existing.get();
+            u.setPasswordHash(passwordHash);
+        } else {
+            u = User.of(email, passwordHash);
+            u.setEnabled(false);
+        }
+        try {
+            u = users.saveAndFlush(u);
+        } catch (DataIntegrityViolationException | OptimisticLockingFailureException lostRace) {
+            // A concurrent registration of the same address won; it created or updated the
+            // pending account and sends its own confirmation mail.
+            return ResponseEntity.accepted().build();
+        }
+        // Mail and token use the stored address, never the raw request string.
+        email = u.getEmail();
 
         String token = emailTokenSvc.create(email, clock.now());
         String link = frontendBaseUrl + verifyEndpointPath + "?token=" + token;
 
-        if (mailEnabled) {
-            try {
-                String subject = "Bitte bestätige deine E-Mail-Adresse";
-                String body = """
-                        Willkommen bei TeamAnalyzer!
+        try {
+            String subject = "Confirm your Team Analyzer email address";
+            String body = """
+                    Welcome to Team Analyzer!
 
-                        Bitte bestätige deine E-Mail, indem du auf den folgenden Link klickst:
-                        %s
+                    Please confirm your email address by opening this link:
+                    %s
 
-                        Der Link ist zeitlich begrenzt gültig.
-                        """.formatted(link);
-                mail.send(email, subject, body);
-            } catch (Exception ex) {
-                log.warn("E-Mail-Versand fehlgeschlagen (fahre ohne Mail fort): {}", ex.toString());
-            }
+                    The link expires after a short time. If you did not create an account,
+                    you can ignore this email.
+                    """.formatted(link);
+            mail.send(email, subject, body);
+        } catch (Exception ex) {
+            // Registration still succeeds; the failure is logged so operators can follow up.
+            log.warn("Could not send verification email: {}", ex.toString());
         }
 
         if (!mailEnabled && logVerificationLink) {
@@ -133,22 +159,18 @@ public class AuthController {
     }
 
     // --- Verify ---
+    /**
+     * Confirms an address. Requires the link from the mailbox <em>and</em> the account's
+     * password: whoever registered the address must also control the mailbox.
+     */
     @PostMapping("/verify")
-    public ResponseEntity<Void> verifyPost(@RequestBody Map<String, String> body) {
-        String token = body.get("token");
-        if (token == null || token.isBlank())
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        return doVerify(token);
-    }
-
-    private ResponseEntity<Void> doVerify(String token) {
-        String email = emailTokenSvc.validateAndGetEmail(token);
-        var user = users.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (!user.isEnabled()) {
-            user.setEnabled(true);
-            user.setEmailVerifiedAt(clock.now());
-            users.save(user);
-        }
+    public ResponseEntity<Void> verify(@Valid @RequestBody VerifyEmailDto body) {
+        String email = emailTokenSvc.validateAndGetEmail(body.token());
+        var user = users.findByEmailWithRoles(email)
+                .filter(u -> enc.matches(body.password(), u.getPasswordHash()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Invalid or expired link, or wrong password."));
+        accountVerification.confirm(user);
         return ResponseEntity.noContent().build();
     }
 
@@ -157,14 +179,14 @@ public class AuthController {
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginDto dto,
             HttpServletRequest req,
             HttpServletResponse res) {
-        String email = dto.email().trim().toLowerCase();
-        var user = users.findByEmailWithRoles(email).orElseThrow(() -> new BadCredentialsException("x"));
+        String email = User.normalizeEmail(dto.email());
+        var user = users.findByEmailWithRoles(email).orElseThrow(() -> new BadCredentialsException(INVALID_LOGIN));
         if (!user.isEnabled() || !enc.matches(dto.password(), user.getPasswordHash()))
-            throw new BadCredentialsException("x");
+            throw new BadCredentialsException(INVALID_LOGIN);
 
         var access = jwt.createAccessToken(user);
 
-        // Plain refresh token + gehashte, Base64URL-kodierte Speicherung
+        // The client gets the plain refresh token; only its SHA-256 hash is stored.
         var refreshPlain = UUID.randomUUID().toString() + "." + UUID.randomUUID();
         var refreshHashB64 = sha256Base64Url(refreshPlain);
 
@@ -214,11 +236,13 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@CookieValue("refresh_token") String refresh,
+    public ResponseEntity<Void> logout(
+            @CookieValue(value = "refresh_token", required = false) String refresh,
             HttpServletRequest req,
             HttpServletResponse res) {
-        var hashB64 = sha256Base64Url(refresh);
-        tokens.revokeByHash(hashB64);
+        if (refresh != null && !refresh.isBlank()) {
+            tokens.revokeByHash(sha256Base64Url(refresh));
+        }
         res.addHeader(HttpHeaders.SET_COOKIE, buildRefreshCookie("", req, 0).toString());
         return ResponseEntity.noContent().build();
     }
@@ -226,8 +250,8 @@ public class AuthController {
     // --- Password Reset: Request Token ---
     @PostMapping("/reset")
     public ResponseEntity<?> sendResetToken(@Valid @RequestBody ResetPasswordDto dto) {
-        passwordResetService.sendResetToken(dto.email().trim().toLowerCase());
-        // Immer OK zurückgeben, damit niemand E-Mail-Adressen prüfen kann
+        passwordResetService.sendResetToken(User.normalizeEmail(dto.email()));
+        // Always answer 200 so the endpoint cannot be used to probe for registered addresses.
         return ResponseEntity.ok().build();
     }
 
@@ -235,11 +259,13 @@ public class AuthController {
 
     @PostMapping("/reset/confirm")
     public ResponseEntity<?> resetPassword(@RequestBody @Valid ConfirmPasswordDto dto) {
-        boolean ok = passwordResetService.resetPassword(dto.token(), dto.newPassword());
-        return ok ? ResponseEntity.ok().build()
-                : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token.");
+        if (!passwordResetService.resetPassword(dto.token(), dto.newPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token.");
+        }
+        return ResponseEntity.ok().build();
     }
 
+    /** Demo workspaces are deleted after 24 hours, so their sessions must not outlive them. */
     private static Duration refreshLifetimeFor(User user) {
         String email = user.getEmail();
         return email != null && email.startsWith("demo+") && email.endsWith("@example.invalid")
@@ -247,14 +273,14 @@ public class AuthController {
                 : Duration.ofDays(14);
     }
 
-    // SHA-256 -> Base64URL (ohne Padding) als String
+    // SHA-256 -> Base64URL (no padding)
     private static String sha256Base64Url(String s) {
         try {
             var md = MessageDigest.getInstance("SHA-256");
             byte[] digest = md.digest(s.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException("SHA-256 unavailable", e);
         }
     }
 

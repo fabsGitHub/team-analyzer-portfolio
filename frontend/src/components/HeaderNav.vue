@@ -2,10 +2,9 @@
 <template>
     <header class="nav" role="banner">
         <div class="navwrap">
-            <div class="brand" aria-label="App" @click="router.push('/my/tokens')" style="cursor:pointer" tabindex="0"
-                @keydown.enter="router.push('/my/tokens')">
+            <RouterLink class="brand" to="/" aria-label="Team Analyzer home">
                 {{ t('app') }}
-            </div>
+            </RouterLink>
 
             <nav v-if="store.state.user" aria-label="Hauptnavigation" class="tabs">
                 <RouterLink v-if="store.state.user?.roles.includes(Roles.ADMIN)" class="tab"
@@ -87,6 +86,7 @@ function onLang(e: Event) {
     const lang = (e.target as HTMLSelectElement).value as 'de' | 'en'
     store.setLanguage(lang)  // persistiert & setzt i18n global
     locale.value = lang      // sofortiges local-Update
+    document.documentElement.lang = lang
 }
 
 const menuOpen = ref(false)

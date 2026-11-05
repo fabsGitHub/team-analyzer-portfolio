@@ -40,6 +40,17 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
       """)
   int revokeByHashBytes(@Param("hash") byte[] hash);
 
+  /** Revokes every active session of a user, e.g. after a password reset. */
+  @Transactional
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("""
+      update RefreshToken rt
+         set rt.revoked = true
+       where rt.user.id = :userId
+         and rt.revoked = false
+      """)
+  int revokeAllForUser(@Param("userId") UUID userId);
+
   /** Convenience-Lookup ohne Fetch-Graph; sparsam einsetzen. */
   Optional<RefreshToken> findByTokenHash(byte[] tokenHash);
 

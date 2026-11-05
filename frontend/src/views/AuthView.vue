@@ -1,14 +1,24 @@
 <template>
   <section class="admin-page">
-    <article class="card auth stack" style="--space: var(--s-4)">
+    <article v-if="checkingSession" class="card auth-session" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      <div>
+        <h1 class="h1">{{ t('auth.connecting') }}</h1>
+        <p>{{ sessionSlow ? t('auth.slowRequest') : t('auth.firstRequest') }}</p>
+      </div>
+    </article>
+
+    <article v-else class="card auth stack" style="--space: var(--s-4)">
       <header class="cluster between center">
         <h1 class="h1">{{ t('auth.title') }}</h1>
       </header>
 
+      <p v-if="serviceUnavailable" class="note err" role="alert">{{ t('auth.serverUnavailable') }}</p>
+
       <form @submit.prevent="onSignIn" class="stack" style="--space: var(--s-3)" aria-describedby="auth-help">
         <div class="stack" style="--space: var(--s-1)">
           <label class="label" :for="idEmail">{{ t('auth.email') }}</label>
-          <input :id="idEmail" class="input" v-model="email" required autocomplete="email" />
+          <input :id="idEmail" class="input" v-model="email" type="email" required autocomplete="email" />
         </div>
 
         <div class="stack" style="--space: var(--s-1)">
@@ -18,7 +28,7 @@
         </div>
 
         <div class="cluster between wrap">
-          <div id="auth-help" class="meta"></div>
+          <div id="auth-help" class="meta" role="status">{{ busy ? t('auth.requestInProgress') : '' }}</div>
           <div class="cluster wrap">
             <button class="btn primary" :disabled="busy">{{ busy ? t('auth.signingin') : t('auth.signin') }}</button>
             <button class="btn" type="button" :disabled="busy" @click="onSignUp">{{ t('auth.signup') }}</button>
@@ -26,90 +36,166 @@
           </div>
         </div>
 
-        <p v-if="msg" class="note ok">{{ msg }}</p>
-        <p v-if="err" class="note err">{{ err }}</p>
+        <p v-if="msg" class="note ok" role="status">{{ msg }}</p>
+        <p v-if="err" class="note err" role="alert">{{ err }}</p>
       </form>
     </article>
   </section>
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from "@/store"
-import { ref, onMounted } from "vue"
-import { useI18n } from "vue-i18n"
-import { useRouter, useRoute } from "vue-router"
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/store'
+import { ClientUtils } from '@/api/client'
+import * as AuthApi from '@/api/auth.api'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const { login, register, resetPassword } = useAuthStore()
+const auth = useAuthStore()
+const { login, register, resetPassword } = auth
 
-const idEmail = "email-input"
-const idPwd = "password-input"
-const email = ref("")
-const password = ref("")
+const idEmail = 'email-input'
+const idPwd = 'password-input'
+const email = ref('')
+const password = ref('')
 const busy = ref(false)
-const err = ref("")
-const msg = ref("")
+const checkingSession = ref(true)
+const sessionSlow = ref(false)
+const serviceUnavailable = ref(false)
+const err = ref('')
+const msg = ref('')
+let slowTimer: ReturnType<typeof setTimeout> | undefined
 
-onMounted(async () => {
-  const token = (route.query.token as string | undefined) ?? ""
-  if (token) {
-    busy.value = true
-    try {
-      const res = await fetch("/api/auth/verify?token=" + encodeURIComponent(token), { method: "GET", credentials: "include" })
-      if (res.status === 204 || res.ok) {
-        msg.value = t("auth.verified_ok") || "E-Mail bestätigt – bitte anmelden."
-        router.replace({ path: "/auth", query: { verified: "1" } })
-        return
-      } else {
-        err.value = t("auth.verified_failed") || "Verifizierungslink ist ungültig oder abgelaufen."
-      }
-    } catch (e: any) {
-      err.value = e?.message || String(e)
-    } finally {
-      busy.value = false
-    }
-  } else if (route.query.verified === "1") {
-    msg.value = t("auth.verified_ok") || "E-Mail bestätigt – bitte anmelden."
+function destination(fallback = '/tutorial') {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
+    ? redirect
+    : fallback
+}
+
+function isServiceFailure(error: any) {
+  const status = error?.response?.status
+  return status >= 500 || !error?.response || error?.code === 'ECONNABORTED' || error?.code === 'ERR_CANCELED'
+}
+
+function showRequestError(error: any) {
+  return isServiceFailure(error)
+    ? t('auth.serverUnavailable')
+    : error?.response?.data?.detail || error?.response?.data?.message || error?.message || String(error)
+}
+
+function validateEmail() {
+  const value = email.value.trim()
+  if (!value) {
+    err.value = t('auth.enter_email')
+    return false
   }
-})
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    err.value = t('auth.invalidEmail')
+    return false
+  }
+  return true
+}
 
 async function onSignIn() {
-  err.value = ""; msg.value = ""; busy.value = true
+  err.value = ''
+  msg.value = ''
+  serviceUnavailable.value = false
+  if (!validateEmail()) return
+  if (!password.value) {
+    err.value = t('auth.enter_password')
+    return
+  }
+  busy.value = true
   try {
     await login(email.value.trim().toLowerCase(), password.value)
-    router.push("/tutorial")
-  } catch (e: any) {
-    err.value = e?.response?.data?.message || e?.message || String(e)
-  } finally { busy.value = false }
+    await router.push(destination())
+  } catch (error: any) {
+    err.value = error?.response?.status === 401
+      ? t('auth.invalidCredentials')
+      : showRequestError(error)
+  } finally {
+    busy.value = false
+  }
 }
 
 async function onSignUp() {
-  err.value = ""; msg.value = ""; busy.value = true
+  err.value = ''
+  msg.value = ''
+  serviceUnavailable.value = false
+  if (!validateEmail()) return
+  if (password.value.length < 10) {
+    err.value = t('auth.passwordTooShort')
+    return
+  }
+  busy.value = true
   try {
     await register(email.value.trim().toLowerCase(), password.value)
-    msg.value = t("auth.check_inbox") || "Registriert. Bitte E-Mail bestätigen."
-  } catch (e: any) {
-    if (e?.response?.status === 409) {
-      err.value = t("auth.exists") || "Diese E-Mail ist bereits registriert."
-    } else {
-      err.value = e?.response?.data?.message || e?.message || String(e)
-    }
-  } finally { busy.value = false }
+    msg.value = t('auth.check_inbox')
+  } catch (error: any) {
+    err.value = error?.response?.status === 409
+      ? t('auth.exists')
+      : showRequestError(error)
+  } finally {
+    busy.value = false
+  }
 }
 
 async function onReset() {
-  err.value = ""; msg.value = ""
-  if (!email.value) { err.value = t("auth.enter_email") || "Bitte E-Mail-Adresse eingeben."; return }
+  err.value = ''
+  msg.value = ''
+  serviceUnavailable.value = false
+  if (!validateEmail()) return
   busy.value = true
   try {
     await resetPassword(email.value.trim().toLowerCase())
-    msg.value = t("auth.reset_sent") || "Falls registriert, wurde eine E-Mail gesendet."
-  } catch (e: any) {
-    err.value = e?.response?.data?.message || e?.message || String(e)
-  } finally { busy.value = false }
+    msg.value = t('auth.reset_sent')
+  } catch (error: any) {
+    err.value = showRequestError(error)
+  } finally {
+    busy.value = false
+  }
 }
+
+onMounted(async () => {
+  const token = typeof route.query.token === 'string' ? route.query.token : ''
+  if (token) {
+    // Confirmation links belong to the /verify page, which also asks for the password.
+    await router.replace({ path: '/verify', query: { token } })
+    return
+  }
+
+  if (route.query.verified === '1') msg.value = t('auth.verified_ok')
+  slowTimer = setTimeout(() => {
+    if (checkingSession.value) sessionSlow.value = true
+  }, 2_500)
+
+  try {
+    const hasSession = await ClientUtils.prewarmSession()
+    if (hasSession) {
+      try {
+        const user = await AuthApi.me()
+        auth.setUser(user)
+        await router.replace(destination('/my/tokens'))
+        return
+      } catch (error: any) {
+        if (isServiceFailure(error)) serviceUnavailable.value = true
+      }
+    } else if (isServiceFailure(ClientUtils.lastPrewarmSessionError())) {
+      serviceUnavailable.value = true
+    }
+  } finally {
+    if (slowTimer) clearTimeout(slowTimer)
+    checkingSession.value = false
+  }
+})
+
+onBeforeUnmount(() => {
+  if (slowTimer) clearTimeout(slowTimer)
+})
 </script>
 
 <style scoped>
@@ -130,7 +216,8 @@ async function onReset() {
 
 .meta {
   color: #6b7280;
-  font-size: .9rem
+  font-size: .9rem;
+  min-height: 1.2em;
 }
 
 .stack>*+* {
@@ -165,6 +252,40 @@ async function onReset() {
 .auth {
   max-width: 480px;
   margin-inline: auto
+}
+
+.auth-session {
+  max-width: 520px;
+  margin-inline: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.auth-session h1 {
+  margin: 0 0 .4rem;
+  font-size: 1.2rem;
+}
+
+.auth-session p {
+  margin: 0;
+  color: #5c6470;
+  line-height: 1.55;
+}
+
+.spinner {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex: 0 0 auto;
+  border: 3px solid #e7e9ed;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin-top: .1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .input {

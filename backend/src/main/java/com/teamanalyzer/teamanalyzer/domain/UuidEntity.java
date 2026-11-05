@@ -31,6 +31,16 @@ public abstract class UuidEntity {
   @Column(name = "version", nullable = false)
   private long version;
 
+  /**
+   * Stores the given instant as both creation and update time instead of the database's
+   * precise CURRENT_TIMESTAMP. Used by anonymous survey data, which must only reveal a coarse
+   * submission time. The entity must override the column mappings to make them insertable.
+   */
+  protected void useFixedTimestamps(Instant at) {
+    this.createdAt = at;
+    this.updatedAt = at;
+  }
+
   @PrePersist
   void ensureId() {
     if (id == null)

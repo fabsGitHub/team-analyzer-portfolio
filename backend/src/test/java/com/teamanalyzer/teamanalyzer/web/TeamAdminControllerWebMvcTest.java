@@ -98,6 +98,8 @@ class TeamAdminControllerWebMvcTest {
   void full_admin_flow_create_upsert_leader_patch_delete_member() throws Exception {
     // --- 1) POST /api/admin/teams ---
     when(teamService.createTeam(eq("Blue"), eq(u1))).thenReturn(team);
+    when(userRepo.findById(u1)).thenReturn(Optional.of(user1));
+    when(teamMemberRepo.existsByUser_IdAndLeaderTrue(u1)).thenReturn(true);
 
     mvc.perform(post("/api/admin/teams")
         .with(csrf()) // <— wichtig
@@ -107,7 +109,9 @@ class TeamAdminControllerWebMvcTest {
         .andExpect(status().isCreated())
         .andExpect(header().string("Location", "/api/admin/teams/" + teamId))
         .andExpect(jsonPath("$.name").value("Blue"))
-        .andExpect(jsonPath("$.id").value(teamId.toString()));
+        .andExpect(jsonPath("$.id").value(teamId.toString()))
+        .andExpect(jsonPath("$.members[0].userId").value(u1.toString()))
+        .andExpect(jsonPath("$.members[0].leader").value(true));
 
     // --- 2) PUT upsert member (u2, leader=true) -> syncLeaderRole setzt Rolle ---
     when(teamRepo.findById(teamId)).thenReturn(Optional.of(team));

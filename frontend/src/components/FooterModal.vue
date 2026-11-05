@@ -23,17 +23,17 @@ const { t } = useI18n()
     color: var(--muted);
     font-size: 0.97em;
     padding: 0.5rem 0;
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    z-index: 20;
+    /* Sits below the content (sticky-footer layout in App.vue) instead of covering it. */
+    margin-top: auto;
     display: flex;
     justify-content: center;
 }
 
 .links {
     display: flex;
-    gap: 1.2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem 1.2rem;
     list-style: none;
     margin: 0;
     padding: 0;

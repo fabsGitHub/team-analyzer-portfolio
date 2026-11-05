@@ -150,7 +150,7 @@ async function refreshAccessToken(): Promise<string> {
   const { data } = await http.post<{ accessToken: string }>(
     '/auth/refresh',
     undefined,
-    { skipAuthHeader: true },
+    { skipAuthHeader: true, timeoutMs: 12_000 },
   )
   if (!data || typeof data.accessToken !== 'string' || !data.accessToken) {
     throw new Error('Invalid refresh response')
@@ -181,12 +181,21 @@ function ensureRefresh(): Promise<string> {
 }
 
 /** Session per Refresh-Cookie vorwärmen (falls kein Token im Speicher). */
+let prewarmSessionError: unknown = null
+export function lastPrewarmSessionError() {
+  return prewarmSessionError
+}
 export async function prewarmSession(): Promise<boolean> {
-  if (getToken()) return true
+  if (getToken()) {
+    prewarmSessionError = null
+    return true
+  }
   try {
     await ensureRefresh()
+    prewarmSessionError = null
     return !!getToken()
-  } catch {
+  } catch (error) {
+    prewarmSessionError = error
     return false
   }
 }
@@ -398,6 +407,7 @@ http.interceptors.response.use(
 // Re-Exports nützlicher Helfer für Domänen-APIs
 export const ClientUtils = {
   prewarmSession,
+  lastPrewarmSessionError,
   fetchMeOnce,
   abortGroup,
 }

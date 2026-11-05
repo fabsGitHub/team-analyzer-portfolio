@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teamanalyzer.teamanalyzer.domain.Survey;
-import com.teamanalyzer.teamanalyzer.domain.SurveyResponse;
 import com.teamanalyzer.teamanalyzer.domain.SurveyToken;
 import com.teamanalyzer.teamanalyzer.domain.User;
 import com.teamanalyzer.teamanalyzer.port.AppClock;
@@ -147,11 +146,5 @@ public class TokenService {
         tok.setRedeemed(true);
         tok.setRedeemedAt(clock.now());
         return tokenRepo.save(tok);
-    }
-
-    @Transactional
-    public void consumeAndDeleteToken(SurveyResponse response, SurveyToken token) {
-        response.clearToken(); // statt setToken(null)
-        tokenRepo.delete(token);
     }
 }

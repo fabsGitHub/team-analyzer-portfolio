@@ -21,7 +21,6 @@ export interface SubmitSurveyRequest {
 export interface CreateSurveyRequest {
   teamId: string
   title: string
-  createdBy: string
   questions: [string, string, string, string, string]
 }
 export interface TeamLite {
@@ -36,13 +35,6 @@ export interface TeamAdminDto extends TeamLite {
   members: TeamMemberDto[]
 }
 
-// falls noch nicht vorhanden:
-export interface Toast {
-  id: string
-  text: string
-  type?: 'success' | 'danger' | 'info' | 'warning'
-}
-
 export type Role = 'USER' | 'ADMIN' | 'LEADER'
 
 export const Roles = {
@@ -51,12 +43,10 @@ export const Roles = {
   USER: 'USER',
 } as const
 
+/** One anonymous response: Likert value (1..5) per question id. */
 export type SingleSurveyResultDto = {
-  q1: number
-  q2: number
-  q3: number
-  q4: number
-  q5: number
+  responseId: string
+  answers: Record<string, number>
 }
 export type SurveyResultsDto = {
   a1: number

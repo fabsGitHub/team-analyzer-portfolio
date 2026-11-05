@@ -82,6 +82,8 @@ export function useAuthStore() {
     state.error = ''
     try {
       await AuthApi.meAnonymousOk()
+    } catch {
+      // Keep the app shell usable if the API is waking up or unavailable.
     } finally {
       state.loading = false
     }
@@ -104,7 +106,7 @@ export function useAuthStore() {
       state.user = null
       throw error
     }
-    toast('Your private sample workspace is ready.', 'success')
+    toast($t('landing.demoReady'), 'success')
     return session.surveyId
   }
 

@@ -36,8 +36,9 @@ public class SecurityConfig {
   private static final String[] PUBLIC_ENDPOINTS = {
       "/error",
       "/actuator/health",
-      "/api/auth/**",
-      "/api/demo/session"
+      "/actuator/health/**",
+      "/api/demo/session",
+      "/api/auth/**"
   };
 
   private static final String[] SURVEY_PUBLIC_ENDPOINTS_GET = {
@@ -105,8 +106,12 @@ public class SecurityConfig {
     return http.build();
   }
 
+  /**
+   * Spring Security's {@code cors()} only picks up a bean named {@code corsConfigurationSource};
+   * with any other name the configured origins would be silently ignored.
+   */
   @Bean
-  CorsConfigurationSource cors(
+  CorsConfigurationSource corsConfigurationSource(
       @Value("${app.cors.allowed-origins:http://localhost:5173}") String originsCsv) {
 
     final List<String> allowedOrigins = Arrays.stream(originsCsv.split(","))

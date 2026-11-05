@@ -23,6 +23,8 @@ import com.teamanalyzer.teamanalyzer.repo.UserRepository;
 import com.teamanalyzer.teamanalyzer.service.TeamService;
 import com.teamanalyzer.teamanalyzer.web.dto.CreateTeamRequestDto;
 import com.teamanalyzer.teamanalyzer.web.dto.TeamAdminDto;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -31,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TeamAdminController {
 
-    // Request-Body für Member-Update
+    /** Request body for adding a member or changing their leader flag. */
     public record UpdateMemberRequest(boolean leader) {
     }
 
@@ -42,10 +44,18 @@ public class TeamAdminController {
     private final TeamMemberRepository teamMemberRepo;
 
     @PostMapping
-    public ResponseEntity<Team> create(@RequestBody CreateTeamRequestDto body) {
-        var team = teamService.createTeam(body.name(), body.leaderUserId());
-        return ResponseEntity.created(URI.create("/api/admin/teams/" + team.getId()))
-                .body(team);
+    @Transactional
+    public ResponseEntity<TeamAdminDto> create(@Valid @RequestBody CreateTeamRequestDto body) {
+        User leader = userRepo.findById(body.leaderUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Leader user not found"));
+
+        var team = teamService.createTeam(body.name().trim(), leader.getId());
+        // The new leader needs the LEADER role, otherwise leader pages stay locked for them.
+        syncLeaderRole(leader);
+
+        var dto = new TeamAdminDto(team.getId(), team.getName(),
+                List.of(new TeamAdminDto.Member(leader.getId(), true)));
+        return ResponseEntity.created(URI.create("/api/admin/teams/" + team.getId())).body(dto);
     }
 
     @GetMapping
@@ -73,13 +83,11 @@ public class TeamAdminController {
             return m;
         });
 
-        boolean prevLeader = member.isLeader();
         member.setLeader(body.leader());
         teamMemberRepo.save(member);
 
-        if (prevLeader != body.leader() || member.getCreatedAt() == null) {
-            syncLeaderRole(user);
-        }
+        // Always re-evaluate (idempotent): re-saving a member also repairs a missing role.
+        syncLeaderRole(user);
     }
 
     @DeleteMapping("{teamId}/members/{userId}")
@@ -117,14 +125,13 @@ public class TeamAdminController {
     @DeleteMapping("/{teamId}")
     @Transactional
     public ResponseEntity<Void> deleteTeam(@PathVariable UUID teamId) {
-        // Betroffene User vorher sammeln
+        // Collect affected users first so their LEADER role can be re-evaluated afterwards.
         List<User> members = teamMemberRepo.findByTeam_Id(teamId)
                 .stream().map(TeamMember::getUser).distinct().toList();
 
         teamMemberRepo.deleteByTeam_Id(teamId);
         teamRepo.deleteById(teamId);
 
-        // Für jeden betroffenen User Leader-Rolle neu bewerten
         for (User u : members) {
             syncLeaderRole(u);
         }
@@ -135,9 +142,7 @@ public class TeamAdminController {
         UUID uid = user.getId();
         boolean leaderSomewhere = teamMemberRepo.existsByUser_IdAndLeaderTrue(uid);
 
-        // Regel: Sobald kein Leader mehr (oder gar kein Mitglied mehr), Rolle
-        // entfernen.
-        // Wenn irgendwo Leader, Rolle setzen.
+        // A user holds the LEADER role exactly while they lead at least one team.
         if (leaderSomewhere) {
             if (user.getRoles().add(Role.LEADER)) {
                 userRepo.save(user);

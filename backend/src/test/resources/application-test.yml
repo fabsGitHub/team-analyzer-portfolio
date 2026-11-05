@@ -1,50 +1,17 @@
-# Test fixtures only. Signing material is generated per JVM run by TeamanalyzerApplicationTests.
+# Test fixtures only. Signing secrets are generated per test JVM by TestSigningSecrets
+# (registered in META-INF/spring.factories), so no key material is committed.
 spring:
   datasource:
+    # Testcontainers starts a throwaway MySQL server for the test run.
     url: jdbc:tc:mysql:8.4.6:///teambase
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
 
-  jpa:
-    open-in-view: false
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-    properties:
-      hibernate.format_sql: true
-      hibernate.jdbc.time_zone: UTC
-
-  flyway:
-    enabled: true
-    baseline-on-migrate: false
-    locations: classpath:db/migration,classpath:db/seed
-    clean-disabled: false
-    validate-migration-naming: true
-
-  mail:
-    host: localhost
-    port: 1025
-
-server:
-  port: 8080
-
 app:
   frontend-base-url: "http://localhost:5173"
-  verify-endpoint-path: "/verify"
-  # Test signing secrets are supplied at runtime from the test context.
-
   auth:
     issuer: "test-issuer"
     email-verify-ttl: 24m
-    jwt-access-ttl: 15m
-    jwt-refresh-ttl: 14d
-    verification-base-url: http://localhost
-
-  # Retained for code paths that still read the legacy property.
-
-  jwt:
-    expiration: 3600000
 
 logging:
   level:
-    org.springframework.security: DEBUG
-    com.teamanalyzer: DEBUG
+    "[com.teamanalyzer]": DEBUG

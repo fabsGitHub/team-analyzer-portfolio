@@ -15,12 +15,13 @@
                         :aria-label="t('surveys.create.fields.title')" />
                     <select v-model="teamId" class="input select" required
                         :aria-label="t('surveys.create.fields.team')">
-                        <option v-for="t in myTeams" :key="t.id" :value="t.id">
-                            {{ t.name }}
+                        <option v-for="team in myTeams" :key="team.id" :value="team.id">
+                            {{ team.name }}
                         </option>
                     </select>
-                    <button class="btn primary" type="submit" :aria-label="t('surveys.create.fields.submit')">
-                        {{ t('surveys.create.fields.submit') }}
+                    <button class="btn primary" type="submit" :disabled="busy"
+                        :aria-label="t('surveys.create.fields.submit')">
+                        {{ busy ? t('common.saving') : t('surveys.create.fields.submit') }}
                     </button>
                 </div>
 
@@ -44,9 +45,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, nextTick } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useTeamsStore, useSurveysStore } from '@/store'
+import { ensureTokensForTeam } from '@/api/surveys.api'
 import type { TeamLite } from '@/types'
 
 const { t } = useI18n()
@@ -58,46 +60,49 @@ const title = ref('')
 const teamId = ref<string>('')
 const myTeams = ref<TeamLite[]>([])
 const questions = ref<string[]>(['', '', '', '', ''])
-const surveyId = ref<string>('')
 const error = ref<string | null>(null)
+const busy = ref(false)
+
+function messageOf(e: any, fallback: string): string {
+    return e?.response?.data?.detail || e?.response?.data?.message || e?.message || fallback
+}
 
 onMounted(async () => {
     try {
         myTeams.value = await teams.loadMyTeams()
-        await nextTick()
         teamId.value = myTeams.value[0]?.id ?? ''
     } catch (e: any) {
-        error.value = e?.response?.data?.message || e?.message || 'Failed to load teams'
+        error.value = messageOf(e, t('surveys.create.loadTeamsError'))
     }
 })
 
 async function create() {
-    const createdBy = auth.state.user?.id || 'unknown-user'
-    const dto = await surveys.createSurvey({
-        teamId: teamId.value,
-        title: title.value.trim(),
-        createdBy,
-        questions: [
-            questions.value[0].trim(),
-            questions.value[1].trim(),
-            questions.value[2].trim(),
-            questions.value[3].trim(),
-            questions.value[4].trim(),
-        ],
-    })
-    surveyId.value = dto.id
-    await issueTeam()
-    title.value = ''
-    questions.value = ['', '', '', '', '']
+    if (busy.value) return
+    busy.value = true
+    error.value = null
+    try {
+        const [q1, q2, q3, q4, q5] = questions.value.map((q) => q.trim())
+        const dto = await surveys.createSurvey({
+            teamId: teamId.value,
+            title: title.value.trim(),
+            questions: [q1, q2, q3, q4, q5],
+        })
+        title.value = ''
+        questions.value = ['', '', '', '', '']
+        await issueTeamTokens(dto.id)
+    } catch (e: any) {
+        error.value = messageOf(e, t('surveys.create.createError'))
+    } finally {
+        busy.value = false
+    }
 }
 
-async function issueTeam() {
-    if (!surveyId.value) return
+async function issueTeamTokens(surveyId: string) {
     try {
-        const { created } = await import('@/api/surveys.api').then(m => m.ensureTokensForTeam(surveyId.value))
-        alert(t('surveys.create.issuedTeamTokensToast', { n: created }))
+        const { created } = await ensureTokensForTeam(surveyId)
+        auth.toast(t('surveys.create.issuedTeamTokensToast', { n: created }), 'success')
     } catch (e: any) {
-        error.value = e?.response?.data?.message || e?.message || 'Token issue failed'
+        error.value = messageOf(e, t('surveys.create.tokenError'))
     }
 }
 </script>

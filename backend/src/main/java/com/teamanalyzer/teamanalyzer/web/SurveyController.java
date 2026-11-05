@@ -18,7 +18,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teamanalyzer.teamanalyzer.domain.Survey;
+import com.teamanalyzer.teamanalyzer.domain.Role;
 import com.teamanalyzer.teamanalyzer.repo.SurveyRepository;
+import com.teamanalyzer.teamanalyzer.repo.UserRepository;
 import com.teamanalyzer.teamanalyzer.repo.TeamMemberRepository;
 import com.teamanalyzer.teamanalyzer.security.AuthUser;
 import com.teamanalyzer.teamanalyzer.service.DownloadTokenService;
@@ -46,6 +48,7 @@ public class SurveyController {
   private final SurveyRepository surveyRepo;
   private final DownloadTokenService downloadTokens;
   private final ObjectMapper objectMapper;
+  private final UserRepository users;
 
   @PersistenceContext
   private EntityManager em;
@@ -200,7 +203,9 @@ public class SurveyController {
   public ResponseEntity<byte[]> downloadViaToken(@PathVariable UUID id, @RequestParam("dl") String dl)
       throws Exception {
     UUID userId = downloadTokens.verifyAndExtractUser(dl, id);
-    boolean allowed = hasRole("ROLE_ADMIN") ||
+    // The browser opens this link without an Authorization header, so authorise the user the
+    // signed token was issued to, not the (anonymous) current request.
+    boolean allowed = users.existsByIdAndRolesContaining(userId, Role.ADMIN) ||
         surveyRepo.existsByIdAndTeam_Members_User_IdAndTeam_Members_LeaderTrue(id, userId);
     if (!allowed)
       throw new ResponseStatusException(HttpStatus.FORBIDDEN);

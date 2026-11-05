@@ -41,7 +41,6 @@ export interface SurveysState {
   resultsError: string
 
   lastCreatedSurveyId: string
-  issuedTokens: string[]
 
   mySurveys: (SurveyDto & { teamName?: string })[]
 }
@@ -57,7 +56,6 @@ const state: SurveysState = reactive({
   resultsError: '',
 
   lastCreatedSurveyId: '',
-  issuedTokens: [],
 
   mySurveys: [],
 })
@@ -97,7 +95,7 @@ export function useSurveysStore() {
   ) {
     await SurveysApi.submitSurveyResponses(surveyId, body)
     state.lastSubmittedSurveyId = surveyId
-    auth.toast($t('survey.thanks') || 'Danke für die Teilnahme!')
+    auth.toast($t('survey.thanks'), 'success')
   }
 
   async function loadSurveyResults(surveyId: string) {
@@ -121,17 +119,8 @@ export function useSurveysStore() {
   async function createSurvey(payload: CreateSurveyRequest) {
     const dto = await SurveysApi.createSurvey(payload)
     state.lastCreatedSurveyId = dto.id
-    auth.toast($t('survey.created') || 'Survey erstellt.', 'success')
+    auth.toast($t('survey.created'), 'success')
     return dto
-  }
-
-  async function issueTokens(surveyId: string, count: number) {
-    state.issuedTokens = await SurveysApi.issueSurveyTokens(surveyId, count)
-    return state.issuedTokens
-  }
-
-  function inviteLinkFor(token: string) {
-    return SurveysApi.buildSurveyInviteLink(state.lastCreatedSurveyId, token)
   }
 
   async function listMySurveys() {
@@ -145,8 +134,6 @@ export function useSurveysStore() {
     submitSurvey,
     loadSurveyResults,
     createSurvey,
-    issueTokens,
-    inviteLinkFor,
     listMySurveys,
   }
 }

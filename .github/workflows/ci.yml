@@ -9,10 +9,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     name: Backend tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -21,18 +26,19 @@ jobs:
           java-version: "21"
           cache: maven
           cache-dependency-path: backend/pom.xml
-      - name: Verify backend
+      - name: Verify backend (unit + Testcontainers integration tests)
         run: ./mvnw --batch-mode --no-transfer-progress verify
         working-directory: backend
 
   frontend:
     name: Frontend lint, component tests, and build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         with:
-          version: 10.15.0
+          package_json_file: frontend/package.json
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -53,3 +59,26 @@ jobs:
       - name: Build
         run: pnpm build
         working-directory: frontend
+
+  docker:
+    name: Docker images and Compose file
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate Compose files
+        env:
+          MYSQL_USER: ci
+          MYSQL_PASSWORD: ci
+          MYSQL_ROOT_PASSWORD: ci
+          APP_JWT_SECRET_BASE64: ci
+          EMAIL_VERIFY_HMAC_SECRET: ci
+          DOWNLOAD_TOKEN_HMAC_SECRET: ci
+          SONAR_DB_PASSWORD: ci
+        run: |
+          docker compose -f docker/docker-compose.yml config --quiet
+          docker compose -f docker/docker-compose.yml -f docker/docker-compose.tools.yml config --quiet
+      - name: Build backend image
+        run: docker build --file docker/Dockerfile.backend --tag team-analyzer-backend:ci .
+      - name: Build frontend image
+        run: docker build --file docker/Dockerfile.frontend --tag team-analyzer-frontend:ci .

@@ -62,8 +62,6 @@ public class DemoWorkspaceService {
 
   @Transactional
   public DemoWorkspace createWorkspace() {
-    cleanupExpiredWorkspaces();
-
     UUID workspaceKey = UUID.randomUUID();
     String email = "demo+" + workspaceKey + "@example.invalid";
     User user = User.of(email, passwordEncoder.encode(UUID.randomUUID() + UUID.randomUUID().toString()));
@@ -86,9 +84,11 @@ public class DemoWorkspaceService {
     }
     questions.saveAll(surveyQuestions);
 
+    // Like real submissions, the sample responses carry only their submission date.
+    Instant submittedAt = Instant.now();
     List<SurveyResponse> seededResponses = new ArrayList<>(SAMPLE_RATINGS.length);
     for (short[] ratings : SAMPLE_RATINGS) {
-      SurveyResponse response = SurveyResponse.create(survey, null);
+      SurveyResponse response = SurveyResponse.create(survey, submittedAt);
       for (int i = 0; i < surveyQuestions.size(); i++) {
         SurveyAnswer answer = new SurveyAnswer();
         answer.setQuestion(surveyQuestions.get(i));
@@ -103,6 +103,11 @@ public class DemoWorkspaceService {
     return new DemoWorkspace(user, survey.getId());
   }
 
+  /**
+   * Deletes demo accounts older than 24 hours together with their teams (surveys, tokens,
+   * responses and answers cascade). Only teams without any non-demo member are deleted, so a
+   * demo account that was added to a real team never takes that team with it.
+   */
   @Scheduled(fixedDelayString = "${app.demo.cleanup-interval-ms:3600000}")
   @Transactional
   public void cleanupExpiredWorkspaces() {
@@ -110,14 +115,28 @@ public class DemoWorkspaceService {
     jdbc.update("""
         DELETE FROM teams
          WHERE id IN (
-           SELECT tm.team_id
-             FROM team_members tm
-             JOIN users u ON u.id = tm.user_id
-            WHERE u.email LIKE ?
-              AND u.created_at < ?
+           SELECT team_id FROM (
+             SELECT tm.team_id
+               FROM team_members tm
+               JOIN users u ON u.id = tm.user_id
+              WHERE u.email LIKE ?
+                AND u.created_at < ?
+                AND NOT EXISTS (
+                  SELECT 1
+                    FROM team_members other
+                    JOIN users ou ON ou.id = other.user_id
+                   WHERE other.team_id = tm.team_id
+                     AND ou.email NOT LIKE ?)
+           ) expired_demo_teams
          )
+        """, DEMO_EMAIL_PATTERN, cutoff, DEMO_EMAIL_PATTERN);
+    // A demo account that still owns a survey in a kept team stays until that survey is gone.
+    jdbc.update("""
+        DELETE FROM users
+         WHERE email LIKE ?
+           AND created_at < ?
+           AND NOT EXISTS (SELECT 1 FROM surveys s WHERE s.created_by = users.id)
         """, DEMO_EMAIL_PATTERN, cutoff);
-    jdbc.update("DELETE FROM users WHERE email LIKE ? AND created_at < ?", DEMO_EMAIL_PATTERN, cutoff);
   }
 
   public record DemoWorkspace(User user, UUID surveyId) {
