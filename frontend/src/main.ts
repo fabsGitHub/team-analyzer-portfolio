@@ -5,6 +5,7 @@ import { i18n } from './i18n'
 import './styles.css'
 
 const app = createApp(App).use(i18n).use(router)
+document.documentElement.lang = String(i18n.global.locale.value)
 
 // zeigt Fehler statt White-Screen
 app.config.errorHandler = (err, info) => {

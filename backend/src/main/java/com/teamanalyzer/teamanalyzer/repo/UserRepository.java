@@ -22,15 +22,18 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * Eager-Laden der Rollen (ElementCollection) zur Vermeidung von N+1
      * in Security-Kontexten (Authentication/Authorization).
      */
-    @EntityGraph(attributePaths = "roles")
-    Optional<User> findByEmailIgnoreCase(String email);
 
     boolean existsByEmail(String email);
+
+    /** Role check without loading the (lazy) role collection. */
+    boolean existsByIdAndRolesContaining(UUID id, com.teamanalyzer.teamanalyzer.domain.Role role);
 
     // --- Ergänzungen für PasswordResetService ---
     Optional<User> findByResetToken(String resetToken);
 
     @EntityGraph(attributePaths = "roles")
-    @Query("select u from User u where lower(u.email) = lower(?1)")
+    // Exact match: emails are stored in canonical form (User.normalizeEmail). SQL lower()/upper()
+    // would merge distinct addresses (e.g. i and dotless ı) and could return the wrong account.
+    @Query("select u from User u where u.email = ?1")
     Optional<User> findByEmailWithRoles(String email);
 }

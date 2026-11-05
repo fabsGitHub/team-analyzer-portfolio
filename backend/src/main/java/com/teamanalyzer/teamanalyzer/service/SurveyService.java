@@ -17,6 +17,7 @@ import com.teamanalyzer.teamanalyzer.domain.SurveyQuestion;
 import com.teamanalyzer.teamanalyzer.domain.SurveyResponse;
 import com.teamanalyzer.teamanalyzer.domain.SurveyToken;
 import com.teamanalyzer.teamanalyzer.domain.Team;
+import com.teamanalyzer.teamanalyzer.port.AppClock;
 import com.teamanalyzer.teamanalyzer.port.DigestService;
 import com.teamanalyzer.teamanalyzer.repo.SurveyQuestionRepository;
 import com.teamanalyzer.teamanalyzer.repo.SurveyRepository;
@@ -39,6 +40,7 @@ public class SurveyService {
     private final TeamMemberRepository tmRepo;
     private final TokenService tokenService;
     private final DigestService digest;
+    private final AppClock clock;
 
     @Transactional
     public Survey createSurvey(UUID leaderId, UUID teamId, String title, List<String> qTexts) {
@@ -76,7 +78,7 @@ public class SurveyService {
         return SurveyDto.from(s, qs);
     }
 
-    /** Plain → SHA-256 → hex → delegiert. */
+    /** Hashes the plain participation token (SHA-256, hex) and delegates. */
     @Transactional
     public void submitAnonymousByPlainToken(UUID surveyId, String plainToken, short[] answers) {
         if (plainToken == null || plainToken.isBlank()) {
@@ -87,8 +89,9 @@ public class SurveyService {
     }
 
     /**
-     * Token wird in derselben Tx gelockt & erst nach erfolgreichem Persist
-     * verbraucht.
+     * Stores an anonymous response. The token row is locked and redeemed in the same
+     * transaction, so each token yields at most one response, but the response itself keeps
+     * no reference to the token or its holder.
      */
     @Transactional
     public void submitAnonymous(UUID surveyId, String tokenHashHex, short[] answers) {
@@ -108,7 +111,7 @@ public class SurveyService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "error.surveys.missingQuestions");
         }
 
-        var r = SurveyResponse.create(Survey.ref(surveyId), tok);
+        var r = SurveyResponse.create(Survey.ref(surveyId), clock.now());
         for (int i = 0; i < QUESTION_COUNT; i++) {
             var a = new SurveyAnswer();
             a.setQuestion(qs.get(i));
@@ -120,7 +123,7 @@ public class SurveyService {
         tokenService.consume(tok);
     }
 
-    // Kompatibilitäts-Overloads
+    // Convenience overloads
     @Transactional
     public void submitAnonymous(UUID surveyId, SurveyToken tok, short[] answers) {
         submitAnonymous(surveyId, tok.getTokenHash(), answers);

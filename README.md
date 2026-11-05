@@ -1,139 +1,167 @@
 # Team Analyzer
 
-A full-stack team-survey application built to demonstrate a structured Spring Boot and Vue architecture, role-aware workflows, token-based participation, and a reproducible local environment.
+[![CI](https://github.com/fabsGitHub/team-analyzer-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/fabsGitHub/team-analyzer-portfolio/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Project overview
+A full-stack team-survey application: team leads create short surveys, every team member answers once with a personal one-time token, and the team's leads review aggregated results. Built with Java 21 / Spring Boot and Vue 3 / TypeScript.
 
-Team Analyzer lets team leaders create surveys, invite participants through shareable token links, and review or export the resulting data. Participants can answer public surveys without creating an account. Authentication is available for management areas, with role-based access for administrators, leaders, and members.
+**Live demo:** <https://team-analyzer-demo.vercel.app> – the real application on Vercel. "Try the live demo" signs you in to a private sample workspace (a fictional team, an editable survey and 18 sample responses) that is deleted after 24 hours. No registration needed.
 
-This is a portfolio and learning project. It is not presented as a production-audited service.
+> This is a portfolio and learning project. It is not presented as a production-audited service.
 
-## Interactive demo
+## Features
 
-The Vercel demo runs the Vue application from `frontend/` and routes `/api` to the Spring Boot service in `backend/`. Visitors can start a private demo workspace with a seeded team, an editable survey, and 18 fictional responses. Each workspace is isolated and expires after 24 hours. The older static mock-up is retained under `demo/` as design reference only.
-## What it demonstrates
-
-- A Java 21 / Spring Boot API with Spring Security, JPA, and Flyway migrations.
-- A Vue 3 and TypeScript single-page frontend.
-- Registration, email verification, JWT access tokens, and refresh-cookie flows.
-- Role-aware survey management and public participation links.
-- JSON result exports protected by signed download links.
-- Local service orchestration with Docker Compose.
+- Registration with email confirmation (link plus password), JWT access tokens and rotating, HTTP-only refresh cookies
+- Password reset with hashed, single-use, time-limited tokens; a reset revokes all refresh sessions
+- Roles: administrators manage teams, leaders create surveys and see their team's results, members answer from "My tokens"
+- One-time participation tokens per member; answers are stored anonymously (no link to the token or person, only the submission date)
+- Results with averages and answer distribution, CSV export, and JSON export via short-lived signed links
+- German and English UI
+- Optional demo mode: one-click private sample workspaces that expire after 24 hours
 
 ## Technology
 
 | Area | Technology |
 | --- | --- |
-| Backend | Java 21, Spring Boot 3, Spring Security 6, Hibernate/JPA |
-| Data | MySQL, H2 for development, Flyway |
-| Frontend | Vue 3, TypeScript, Vite |
-| Local environment | Docker Compose, Nginx, phpMyAdmin, SonarQube |
+| Backend | Java 21, Spring Boot 3.5, Spring Security 6, Spring Data JPA / Hibernate, Flyway, Nimbus JOSE + JWT |
+| Database | MySQL 8.4 |
+| Frontend | Vue 3, TypeScript, Vite, Vue Router, vue-i18n, Axios |
+| Testing | JUnit 5, Mockito, Testcontainers (MySQL), Cypress component tests |
+| Delivery | Docker Compose, nginx, GitHub Actions, Vercel (frontend plus API container), TiDB Cloud |
 
-## Architecture at a glance
+## Repository layout
 
-- **backend/** contains the REST API, security and domain services, and database migrations.
-- **frontend/** contains the Vue application, API client, route guards, and views.
-- **docker/** contains the Compose definition, backend and frontend images, and Nginx configuration.
+| Path | Contents |
+| --- | --- |
+| [`backend/`](backend/) | REST API: security, domain services, repositories, Flyway migrations |
+| [`frontend/`](frontend/) | Vue single-page app (see its [README](frontend/README.md)) |
+| [`docker/`](docker/) | Dockerfiles, Compose files and the nginx configuration |
+| [`demo/`](demo/) | Earlier static mock-up, kept as a design reference (not deployed) |
+| [`docs/`](docs/) | Deployment guide for running the full stack on Vercel |
 
-## Run locally
+## Environments
 
-The Compose stack is intended for local development. It binds its host ports to 127.0.0.1.
+| Environment | What runs | Where it is configured |
+| --- | --- | --- |
+| Vercel demo | Vue frontend plus the Spring Boot API as a container, TiDB Cloud as the database, Brevo for mail, demo workspaces enabled | Root [`vercel.json`](vercel.json), [`backend/Dockerfile.vercel`](backend/Dockerfile.vercel), [deployment guide](docs/VERCEL_DEPLOYMENT.md) |
+| Local stack | MySQL, Spring Boot API and nginx-served frontend | [`docker/docker-compose.yml`](docker/docker-compose.yml), `.env.production` |
+| Local tooling (optional) | phpMyAdmin and SonarQube | [`docker/docker-compose.tools.yml`](docker/docker-compose.tools.yml) |
+| CI | Backend tests (with a MySQL container), frontend lint/tests/build, Docker image builds | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
+| Production profile | Spring profile `prod`: TLS to the database, mail via the Brevo API or SMTP, secure cookies | [`application.yml`](backend/src/main/resources/application.yml) |
 
-1. Copy .env.production.example to .env.production.
-2. Set distinct values for every empty password and signing-secret entry. Keep .env.production local; it is ignored by Git.
-3. Generate fresh values rather than reusing any value previously published in this repository. For example:
-   - openssl rand -base64 32 for APP_JWT_SECRET_BASE64.
-   - openssl rand -hex 32 for each HMAC secret and database password.
-4. Start from the repository root:
+## Run locally with Docker
 
-```bash
-docker compose --env-file .env.production -f docker/docker-compose.yml up --build
-```
+Requirements: Docker with Compose v2.
 
-The local services are:
+1. Copy `.env.production.example` to `.env.production` (it is ignored by Git).
+2. Fill in every value with a fresh random secret, for example:
+
+   ```bash
+   openssl rand -base64 32   # APP_JWT_SECRET_BASE64
+   openssl rand -hex 32      # each password and both HMAC secrets
+   ```
+
+3. Start the stack from the repository root:
+
+   ```bash
+   docker compose --env-file .env.production -f docker/docker-compose.yml up --build
+   ```
 
 | Service | Address |
 | --- | --- |
-| Frontend | http://localhost:5173 |
-| Backend API | http://localhost:8080 |
-| phpMyAdmin | http://localhost:8082 |
-| SonarQube | http://localhost:9000 |
+| App (frontend + `/api` proxy) | <http://localhost:5173> |
+| Backend API | <http://localhost:8080> (health: `/actuator/health`) |
+| MySQL | `localhost:3306` |
 
-MySQL is available to the host at localhost:3306 for local tooling. The database, application, SonarQube, and phpMyAdmin ports are not published on external interfaces by this Compose file.
+All ports are bound to `127.0.0.1`. Services start in order (database → API → frontend) once each health check passes. To add phpMyAdmin (<http://localhost:8082>) and SonarQube (<http://localhost:9000>), set `SONAR_DB_PASSWORD` and add the tools file:
 
-Stop the stack while preserving its database volumes:
+```bash
+docker compose --env-file .env.production -f docker/docker-compose.yml -f docker/docker-compose.tools.yml up --build
+```
+
+Stop the stack and keep the data:
 
 ```bash
 docker compose --env-file .env.production -f docker/docker-compose.yml down
 ```
 
-Changing the environment file does not reinitialize an existing MySQL or SonarQube database volume. Keep the original database credentials for existing volumes, or intentionally reset disposable local data after making any backup you need.
+The Compose project is named `team-analyzer`, so its database volume is `team-analyzer_dbdata`. Changing `.env.production` does not re-initialise an existing MySQL volume; keep the original credentials or remove the disposable volume with `down -v`.
 
-## Registration and local verification
+### First accounts
 
-There are no pre-created demo accounts or seeded administrator credentials. Create an account through the registration flow. The project currently has no mail server configured in its local stack, so newly registered accounts need email verification before login.
+No accounts are seeded. Register in the app, or set `APP_DEMO_ENABLED=true` and use "Try the live demo" on the start page for a throwaway sample workspace. The local stack has no mail server, so for a disposable local demo set `LOG_VERIFICATION_LINK=true` in `.env.production`; verification and password-reset links are then printed to the backend log (`docker compose ... logs backend`). Keep this disabled anywhere else: the links are one-time credentials.
 
-For a disposable local demo only, set LOG_VERIFICATION_LINK=true in your local .env.production file to print verification links to the backend log. Those links contain one-time tokens and the logs may include personal data. Keep this option disabled outside a local environment, and do not share or retain logs produced while it is enabled. The default is disabled.
+No account is an administrator by default. To make your own account the first administrator, set `APP_BOOTSTRAP_ADMIN_EMAIL` in `.env.production` to your address, restart the stack, then register and confirm that address: the role is granted on confirmation. Confirming an address needs both the link from the mailbox and the password chosen at registration, so nobody who registers your address (before or after you) can have their password activated or become administrator through your click. If a confirmation fails because someone else registered the address in the meantime, register again or reset the password; a completed password reset also confirms the address.
 
-Administrator and leader roles are not granted automatically. Configure roles only in a local database that you control.
-
-## Automated checks
-
-GitHub Actions runs the backend Maven verification suite and the frontend lint, Cypress component tests, and production build on pushes to main and pull requests.
-
-To run the frontend checks locally:
+Alternatively, grant the role directly in the local database:
 
 ```bash
-cd frontend
-pnpm install --frozen-lockfile
-pnpm lint
-pnpm test:component
-pnpm build
+docker compose --env-file .env.production -f docker/docker-compose.yml exec db \
+  sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" teambase -e "INSERT INTO user_roles (user_id, role) SELECT id, '\''ADMIN'\'' FROM users WHERE email = '\''you@example.com'\''"'
 ```
 
-The backend integration tests use Testcontainers and require a working Docker runtime:
+Sign in again afterwards so the new role is part of your access token. Administrators create teams and assign leaders; leaders receive the `LEADER` role automatically.
 
-```bash
-cd backend
-./mvnw --batch-mode verify
-```
+## Develop without Docker
 
-These checks provide a repeatable baseline; they do not replace a security review or demonstrate production operation.
+- **Backend:** start MySQL (for example only the `db` service from the Compose file), export the variables from `.env.production`, then run `./mvnw spring-boot:run` in `backend/`. The `mysql` profile is active by default.
+- **Frontend:** `pnpm install && pnpm dev` in `frontend/`. The dev server proxies `/api` to `http://localhost:8080`.
 
 ## Configuration
 
-backend/src/main/resources/application.yml defines the Spring profiles and service defaults. The local Compose stack reads database credentials and application secrets from .env.production. The tracked example contains empty secret fields intentionally; fill them with fresh values before starting the services.
+The backend reads its configuration from environment variables. Secrets have no defaults, so the API refuses to start without them.
 
-The `prod` Spring profile enables email delivery and requires `SPRING_MAIL_HOST`, `SPRING_MAIL_USERNAME`, and `SPRING_MAIL_PASSWORD`. `SPRING_MAIL_PORT` defaults to 587. Keep these values in the deployment environment's secret store; do not add them to the repository. Local development and automated tests do not require a real SMTP account.
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `MYSQL_USER`, `MYSQL_PASSWORD` | yes | Database credentials |
+| `DB_HOST`, `DB_PORT`, `MYSQL_DATABASE` | no | Database location for the `mysql` profile (defaults: `localhost`, `3306`, `teambase`) |
+| `APP_JWT_SECRET_BASE64` | yes | Base64 key for signing access tokens, at least 32 random bytes |
+| `EMAIL_VERIFY_HMAC_SECRET` | yes | Key for email-verification tokens, at least 64 bytes |
+| `DOWNLOAD_TOKEN_HMAC_SECRET` | yes | Key for signed result-download links, at least 32 bytes |
+| `APP_FRONTEND_BASE_URL` | no | Public URL used in emailed links (default `http://localhost:5173`) |
+| `APP_CORS_ALLOWED_ORIGINS` | no | Comma-separated origins allowed to call the API cross-origin (default: `APP_FRONTEND_BASE_URL`); not needed when the frontend and API share an origin |
+| `APP_BOOTSTRAP_ADMIN_EMAIL` | no | This address becomes administrator once it is registered and confirmed |
+| `APP_DEMO_ENABLED` | no | Enables `POST /api/demo/session` ("Try the live demo"): each call creates a private sample workspace that is deleted after 24 hours (default `false`) |
+| `LOG_VERIFICATION_LINK` | no | Print one-time links to the log when mail is disabled (local demos only) |
+| `PORT` | no | HTTP port of the API (default `8080`) |
 
-The application uses separate secrets for JWT signing, email-verification tokens, and signed download links. Use a different random value for each purpose. Do not reuse values from commit history.
+Use a different random value for every secret, and never reuse values from the repository history.
 
-## Security and project scope
+**Production profile (`SPRING_PROFILES_ACTIVE=prod`)** additionally needs `MYSQL_HOST`, `MYSQL_USER` and `MYSQL_PASSWORD` (or the `TIDB_*` equivalents) and a mail setup with a verified sender address in `SPRING_MAIL_FROM`: by default the Brevo transactional API (`BREVO_API_KEY`), or SMTP with `APP_MAIL_PROVIDER=smtp` and `SPRING_MAIL_HOST`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`. Without the database credentials, the Brevo key or the sender address the API refuses to start; wrong SMTP credentials only show up as failed sends in the log. The [Vercel deployment guide](docs/VERCEL_DEPLOYMENT.md) lists every variable. Keep these values in the deployment platform's secret store.
 
-- The Compose file is for local development and publishes ports only on loopback.
-- The local stack is not a production deployment template. Production operation needs environment-specific TLS, mail delivery, secret management, access controls, backups, monitoring, and operational review.
-- Do not use real or reused credentials in this demo.
-- Old database volumes may still contain demo accounts created by earlier versions. Removing the seed migration does not delete data already present in a volume; inspect and clean any disposable local database separately.
-- Verification links are not logged by default. Enabling the local-only option exposes one-time tokens to anyone with access to the container logs.
+## Automated checks
+
+GitHub Actions runs on every pull request and on pushes to `main`:
+
+- **Backend:** `./mvnw verify`: unit tests, MockMvc tests and integration tests against a real MySQL container (Testcontainers), including the full register → verify → login → refresh → password-reset flow. Needs a Docker runtime locally.
+- **Frontend:** `pnpm lint`, Cypress component tests and `pnpm build` (includes `vue-tsc` type checking).
+- **Docker:** validates both Compose files and builds both images.
+
+Run them locally:
+
+```bash
+cd backend && ./mvnw --batch-mode verify
+```
+
+```bash
+cd frontend && pnpm install --frozen-lockfile && pnpm exec cypress install && pnpm lint && pnpm test:component && pnpm build
+```
+
+## Security notes
+
+- Passwords are hashed with BCrypt. Refresh, participation and password-reset tokens are stored only as SHA-256 hashes.
+- Survey responses keep no reference to the participation token or member, and the application tables store only the submission date, so responses cannot be matched with token redemption times. Limits: in very small teams, a date with a single response can still narrow down who answered, and database transaction logs and backups (for example the MySQL binary log, point-in-time recovery or change-data-capture) record which redemption and which response were written together until they expire. The local Compose database runs without a binary log; check the retention of managed databases.
+- Download links are HMAC-signed, scoped to a single survey and valid for five minutes.
+- The nginx container sends a strict Content Security Policy and related security headers.
+- The Compose stack is meant for local development. A real deployment also needs TLS, mail delivery, secret management, backups, monitoring and an operational review.
+- Demo workspaces belong to generated accounts (`demo+<id>@example.invalid`) with a random password that is never shown; the browser gets an access token and a 24-hour refresh cookie. Their teams, surveys and accounts are deleted after 24 hours, when a new demo starts and by an hourly job. Starting demos is limited per IP address.
+
+## Roadmap
+
+- User lookup by email in the team administration (currently user IDs are entered directly)
+- Rate limiting for authentication endpoints
+- Rate limiting shared across instances for demo sessions (the current per-IP limit is kept in memory per backend instance)
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE). The license applies to the original project code; third-party dependencies and other third-party materials retain their own licenses and terms.
-
-## Further development
-
-Useful next steps for this portfolio project are broader automated coverage around authentication and authorization, an explicit production deployment guide, and operational monitoring.
-
-
-## Vercel full-stack deployment
-
-The root `vercel.json` composes the Vite frontend and the backend container. Configure the Vercel project with the repository `fabsGitHub/team-analyzer-portfolio`, root directory `.`, and these server-only environment variables:
-
-- `SPRING_PROFILES_ACTIVE=prod`
-- `MYSQL_HOST`, `MYSQL_PORT=4000`, `MYSQL_DATABASE`, `MYSQL_USER`, and `MYSQL_PASSWORD` for TiDB Cloud SQL
-- `APP_JWT_SECRET_BASE64`, `EMAIL_VERIFY_HMAC_SECRET`, and `DOWNLOAD_TOKEN_HMAC_SECRET`
-- `APP_FRONTEND_BASE_URL` set to the demo's canonical HTTPS origin
-- `APP_DEMO_ENABLED=true`
-- `APP_MAIL_PROVIDER=brevo-api`, `BREVO_API_KEY`, and `SPRING_MAIL_FROM` for a verified Brevo sender
-
-Keep credentials in Vercel encrypted environment variables. The TiDB Cloud management API key is not a MySQL/JDBC password. The old `demo/` directory is not the Vercel root.
+MIT, see [LICENSE](LICENSE). The license covers the original project code; third-party dependencies keep their own licenses.

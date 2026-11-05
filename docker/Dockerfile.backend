@@ -1,16 +1,22 @@
-# docker/Dockerfile.backend (final)
-FROM maven:3.9.9-eclipse-temurin-21 AS build
+# syntax=docker/dockerfile:1
+# Build context: repository root (see docker-compose.yml).
+
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /workspace
-
-COPY backend/pom.xml backend/pom.xml
-RUN mvn -f backend/pom.xml -q -Dmaven.test.skip=true dependency:go-offline
-
-COPY backend/src backend/src
-RUN mvn -f backend/pom.xml -Dmaven.test.skip=true clean package
+COPY backend/pom.xml ./
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn --batch-mode --no-transfer-progress -Dmaven.test.skip=true dependency:go-offline
+COPY backend/src ./src
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn --batch-mode --no-transfer-progress -Dmaven.test.skip=true package
 
 FROM eclipse-temurin:21-jre
+RUN groupadd --system app && useradd --system --gid app --home-dir /app --shell /usr/sbin/nologin app
 WORKDIR /app
-# Kopiert nur das App-JAR und benennt es direkt app.jar
-COPY --from=build /workspace/backend/target/team-radar-*.jar /app/app.jar
+COPY --from=build --chown=app:app /workspace/target/team-analyzer.jar /app/app.jar
+USER app
 EXPOSE 8080
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+HEALTHCHECK --interval=15s --timeout=3s --start-period=60s --retries=5 \
+    CMD curl -fsS http://127.0.0.1:8080/actuator/health || exit 1
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

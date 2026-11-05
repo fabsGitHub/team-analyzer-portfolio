@@ -6,7 +6,7 @@ import java.util.UUID;
 import com.teamanalyzer.teamanalyzer.domain.Team;
 
 public record TeamAdminDto(UUID id, String name, List<Member> members) {
-    record Member(UUID userId, boolean leader) {
+    public record Member(UUID userId, boolean leader) {
     }
 
     public static TeamAdminDto fromEntity(Team t) {

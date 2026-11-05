@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f7f7f2">
     <meta name="description" content="Explore Team Analyzer: a thoughtful way to collect team feedback, understand the signal, and choose a next step.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://team-analyzer-demo.vercel.app/">
     <meta property="og:title" content="Team Analyzer — make space for better conversations">
     <meta property="og:description" content="A hands-on preview of a team survey and insight workflow. Sample data only.">
+    <meta name="twitter:card" content="summary">
+    <link rel="canonical" href="https://team-analyzer-demo.vercel.app/">
     <title>Team Analyzer — make space for better conversations</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./styles.css">
@@ -250,10 +254,10 @@
             <div class="participant-card-top"><span class="participant-overline">NORTHSTAR STUDIO</span><span class="participant-lock">◇ Private</span></div>
             <div class="participant-progress"><span></span></div>
             <div class="participant-step">QUESTION 2 OF 5</div>
-            <h3>Can you ask for help when something gets stuck?</h3>
+            <h3>I can ask for help before a small blocker becomes a big one.</h3>
             <p>Your perspective helps the team learn where support is working.</p>
-            <div class="preview-options"><span>Not yet</span><span>Sometimes</span><span>Mostly</span><span>Yes, always</span></div>
-            <div class="preview-card-bottom"><span>About 2 minutes</span><span>Team Analyzer <b>✳</b></span></div>
+            <div class="preview-options"><span>Not at all</span><span>A little</span><span>Somewhat</span><span>Mostly</span><span>Very much</span></div>
+            <div class="preview-card-bottom"><span>About 1 minute</span><span>Team Analyzer <b>✳</b></span></div>
           </div>
           <div class="participant-note"><span class="note-sticker" aria-hidden="true">✦</span><span>Honest feedback is a team practice.</span></div>
         </div>
@@ -282,7 +286,7 @@
       </a>
       <p>Made for more thoughtful team conversations.</p>
       <a href="https://github.com/fabsGitHub/team-analyzer-portfolio" target="_blank" rel="noreferrer">Open-source project <span aria-hidden="true">↗</span></a>
-      <span class="footer-copy">© 2025 Team Analyzer</span>
+      <span class="footer-copy">© <span data-current-year>2026</span> Team Analyzer</span>
     </footer>
 
     <dialog class="survey-dialog" id="survey-dialog" aria-labelledby="survey-title">
@@ -293,7 +297,7 @@
           <span class="survey-private"><span aria-hidden="true">◇</span> Private sample</span>
         </div>
         <div class="survey-progress"><span id="survey-progress"></span></div>
-        <p class="survey-kicker" id="survey-step">QUESTION 1 OF 3</p>
+        <p class="survey-kicker" id="survey-step">QUESTION 1 OF 5</p>
         <h2 id="survey-title">A moment to reflect.</h2>
         <div id="survey-question-area"></div>
         <div class="survey-modal-footer"><span>About 1 minute · Demo only</span><button class="button button-primary survey-continue" id="survey-continue" type="button" disabled>Continue <span aria-hidden="true">→</span></button></div>

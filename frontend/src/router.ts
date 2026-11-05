@@ -4,8 +4,8 @@ import {
   createWebHistory,
   type RouteLocationNormalized,
 } from 'vue-router'
-import LandingView from '@/views/LandingView.vue'
 import AuthView from '@/views/AuthView.vue'
+import LandingView from '@/views/LandingView.vue'
 import TutorialView from '@/views/TutorialView.vue'
 import VerifyView from '@/views/VerifyView.vue'
 
@@ -13,7 +13,6 @@ import ImprintView from '@/footer/ImprintView.vue'
 import PrivacyView from '@/footer/PrivacyView.vue'
 import HelpView from '@/footer/HelpView.vue'
 import ShortcutsView from '@/footer/ShortcutsView.vue'
-import AboutView from '@/footer/AboutView.vue'
 import SurveyFillView from '@/views/SurveyFillView.vue'
 import SurveyCreateView from '@/views/SurveyCreateView.vue'
 import AdminTeamView from '@/views/AdminTeamView.vue'
@@ -27,25 +26,7 @@ import { useAuthStore } from '@/store'
 const routes = [
   { path: '/', name: 'Landing', component: LandingView },
 
-  // /auth: wenn Session automatisch möglich -> direkt /my/tokens
-  {
-    path: '/auth',
-    component: AuthView,
-    beforeEnter: async () => {
-      const auth = useAuthStore()
-      const hasSession = await ClientUtils.prewarmSession()
-      if (!hasSession) return true
-      if (!auth.state.user) {
-        try {
-          const me = await AuthApi.me()
-          auth.setUser(me as any)
-        } catch {
-          return true
-        }
-      }
-      return { path: '/my/tokens' }
-    },
-  },
+  { path: '/auth', component: AuthView },
   { path: '/auth/reset', component: ResetPasswordView },
 
   { path: '/tutorial', component: TutorialView },
@@ -54,7 +35,7 @@ const routes = [
   { path: '/privacy', component: PrivacyView },
   { path: '/help', component: HelpView },
   { path: '/shortcuts', component: ShortcutsView },
-  { path: '/about', component: AboutView },
+  { path: '/about', redirect: { path: '/', hash: '#about-demo' } },
 
   // Public Survey (mit Token im Query erlauben wir anonymen Zugriff)
   { path: '/surveys/:id', name: 'Survey', component: SurveyFillView },
@@ -98,7 +79,15 @@ const routes = [
   { path: '/:pathMatch(.*)*', redirect: '/auth' },
 ]
 
-const router = createRouter({ history: createWebHistory(), routes })
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+  scrollBehavior(to) {
+    // Leave room for the sticky header when jumping to a section.
+    if (to.hash) return { el: to.hash, top: 80, behavior: 'smooth' }
+    return { top: 0 }
+  },
+})
 
 const PUBLIC_PATHS = new Set<string>([
   '/',
@@ -186,8 +175,10 @@ router.beforeEach(async (to) => {
   return true
 })
 
+// Move focus to the new page for screen readers, without scrolling: scrolling is left to
+// scrollBehavior (top of the page, or the requested #section).
 router.afterEach(() => {
-  setTimeout(() => document.getElementById('main')?.focus(), 0)
+  setTimeout(() => document.getElementById('main')?.focus({ preventScroll: true }), 0)
 })
 
 export default router

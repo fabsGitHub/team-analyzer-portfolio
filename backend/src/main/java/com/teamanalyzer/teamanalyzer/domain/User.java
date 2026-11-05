@@ -1,5 +1,6 @@
 package com.teamanalyzer.teamanalyzer.domain;
 
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.*;
 import org.hibernate.annotations.BatchSize;
@@ -99,8 +100,17 @@ public class User extends UuidEntity {
             email = normalizeEmail(email);
     }
 
-    private static String normalizeEmail(String value) {
-        return value.trim().toLowerCase(Locale.ROOT);
+    /**
+     * The one canonical form of an email address used for storage, lookups and mail. Accounts
+     * are compared byte-for-byte in the database (binary collation, see V3), so every caller
+     * must normalise the same way.
+     */
+    public static String normalizeEmail(String value) {
+        // NFC again after lower-casing: some upper-case letters with combining marks have no
+        // precomposed capital, so lower-casing can produce a non-NFC string. This keeps the
+        // function idempotent (normalizeEmail(normalizeEmail(x)) == normalizeEmail(x)).
+        String nfc = Normalizer.normalize(value.trim(), Normalizer.Form.NFC);
+        return Normalizer.normalize(nfc.toLowerCase(Locale.ROOT), Normalizer.Form.NFC);
     }
 
     public void setEmail(String email) {

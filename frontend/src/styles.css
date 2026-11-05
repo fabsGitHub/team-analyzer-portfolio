@@ -51,12 +51,14 @@ header.nav {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  max-width: 52rem;
+  max-width: 64rem;
   margin: 0 auto;
 }
 .brand {
   font-weight: 700;
   color: var(--accent);
+  white-space: nowrap;
+  text-decoration: none;
 }
 
 /* This is the important change */
@@ -66,6 +68,7 @@ header.nav {
 
 
 .tab {
+  white-space: nowrap;
   padding: 0.5rem 0.75rem;
   border-radius: 999px;
   border: 1px solid var(--border);
@@ -232,17 +235,22 @@ header.nav {
   outline: none;
 }
 
-/* Containerbreite steuern (Header nutzt bereits max-width) */
+/* Content width (the header uses its own max-width) */
 main, .card { max-width: 52rem; margin-inline: auto; }
 
-/* Tabs: Scroll auf schmalen Screens */
+/* Tabs scroll horizontally on narrow screens */
 .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 .badge { white-space: nowrap; }
 
-/* Buttons dezenter auf Mobil */
+/* Slightly smaller buttons on mobile */
 @media (max-width: 720px){
   .btn { padding: .55rem .75rem; }
+}
+
+/* <main> receives programmatic focus after navigation (for screen readers); no ring needed. */
+#main:focus {
+  outline: none;
 }
 
 :focus:not(:focus-visible) {

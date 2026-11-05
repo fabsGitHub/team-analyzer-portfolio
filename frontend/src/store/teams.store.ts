@@ -89,7 +89,7 @@ export function useTeamsStore() {
 
   async function createTeamAdmin(name: string, leaderUserId: string) {
     await TeamsApi.createTeamAdmin(name, leaderUserId)
-    auth.toast($t('team.created') || 'Team erstellt.', 'success')
+    auth.toast($t('team.created'), 'success')
     await loadTeamsAdmin()
   }
   async function addMemberAdmin(
@@ -98,7 +98,7 @@ export function useTeamsStore() {
     leader = false,
   ) {
     await TeamsApi.addOrUpdateMemberAdmin(teamId, userId, leader)
-    auth.toast($t('team.member_added') || 'Mitglied hinzugefügt.', 'success')
+    auth.toast($t('team.member_added'), 'success')
     await loadTeamsAdmin()
   }
   async function setLeaderAdmin(
@@ -107,12 +107,12 @@ export function useTeamsStore() {
     leader: boolean,
   ) {
     await TeamsApi.addOrUpdateMemberAdmin(teamId, userId, leader)
-    auth.toast($t('team.leader_updated') || 'Leader aktualisiert.', 'success')
+    auth.toast($t('team.leader_updated'), 'success')
     await loadTeamsAdmin()
   }
   async function removeMemberAdmin(teamId: string, userId: string) {
     await TeamsApi.removeMemberAdmin(teamId, userId)
-    auth.toast($t('team.member_removed') || 'Mitglied entfernt.', 'success')
+    auth.toast($t('team.member_removed'), 'success')
     await loadTeamsAdmin()
   }
   async function deleteTeamAdmin(teamId: string) {

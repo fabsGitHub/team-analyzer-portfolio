@@ -1,6 +1,19 @@
+# Local development stack. All published ports are bound to 127.0.0.1.
+#
+#   docker compose --env-file .env.production -f docker/docker-compose.yml up --build
+#
+# Optional tooling (phpMyAdmin, SonarQube) lives in docker-compose.tools.yml:
+#
+#   docker compose --env-file .env.production -f docker/docker-compose.yml -f docker/docker-compose.tools.yml up --build
+name: team-analyzer
+
 services:
   db:
-    image: mysql:8
+    image: mysql:8.4
+    restart: unless-stopped
+    # No binary log: it is not needed locally and would keep, for 30 days, which participation
+    # token was redeemed in the same transaction as which (otherwise anonymous) survey response.
+    command: ["--disable-log-bin"]
     environment:
       MYSQL_DATABASE: teambase
       MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER in .env.production}
@@ -14,44 +27,28 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
-      retries: 5
-
-  sonarqube:
-    image: sonarqube:community
-    container_name: sonarqube
-    depends_on:
-      - sonar-db
-    environment:
-      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonar
-      SONAR_JDBC_USERNAME: sonar
-      SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:?Set SONAR_DB_PASSWORD in .env.production}
-    ports:
-      - "127.0.0.1:9000:9000"
-    volumes:
-      - sonarqube_data:/opt/sonarqube/data
-      - sonarqube_extensions:/opt/sonarqube/extensions
-
-  sonar-db:
-    image: postgres:15
-    container_name: sonar-db
-    environment:
-      POSTGRES_USER: sonar
-      POSTGRES_PASSWORD: ${SONAR_DB_PASSWORD:?Set SONAR_DB_PASSWORD in .env.production}
-      POSTGRES_DB: sonar
-    volumes:
-      - sonar_db:/var/lib/postgresql/data
+      retries: 10
+      start_period: 20s
 
   backend:
     build:
       context: ..
       dockerfile: docker/Dockerfile.backend
-    env_file:
-      - ../.env.production
+    restart: unless-stopped
+    # Only the values the API needs are passed in; database root and tool passwords stay out.
     environment:
       SPRING_PROFILES_ACTIVE: mysql
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/teambase?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:?Set MYSQL_USER in .env.production}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env.production}
+      DB_HOST: db
+      MYSQL_DATABASE: teambase
+      MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER in .env.production}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env.production}
+      APP_JWT_SECRET_BASE64: ${APP_JWT_SECRET_BASE64:?Set APP_JWT_SECRET_BASE64 in .env.production}
+      EMAIL_VERIFY_HMAC_SECRET: ${EMAIL_VERIFY_HMAC_SECRET:?Set EMAIL_VERIFY_HMAC_SECRET in .env.production}
+      DOWNLOAD_TOKEN_HMAC_SECRET: ${DOWNLOAD_TOKEN_HMAC_SECRET:?Set DOWNLOAD_TOKEN_HMAC_SECRET in .env.production}
+      LOG_VERIFICATION_LINK: ${LOG_VERIFICATION_LINK:-false}
+      APP_BOOTSTRAP_ADMIN_EMAIL: ${APP_BOOTSTRAP_ADMIN_EMAIL:-}
+      APP_DEMO_ENABLED: ${APP_DEMO_ENABLED:-false}
+      APP_FRONTEND_BASE_URL: http://localhost:5173
     depends_on:
       db:
         condition: service_healthy
@@ -62,29 +59,12 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.frontend
-    ports:
-      - "127.0.0.1:5173:80"
-    depends_on:
-      - backend
-
-  phpmyadmin:
-    image: phpmyadmin:5-apache
     restart: unless-stopped
     depends_on:
-      db:
+      backend:
         condition: service_healthy
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      PMA_ARBITRARY: "0"
-      UPLOAD_LIMIT: 128M
     ports:
-      - "127.0.0.1:8082:80"
-    volumes:
-      - ./docker/phpmyadmin/servername.conf:/etc/apache2/conf-enabled/servername.conf:ro
+      - "127.0.0.1:5173:80"
 
 volumes:
-  dbdata: {}
-  sonarqube_data:
-  sonarqube_extensions:
-  sonar_db:
+  dbdata:

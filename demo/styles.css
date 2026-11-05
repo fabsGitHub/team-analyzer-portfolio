@@ -13,13 +13,16 @@
   --coral: #d9755b;
   --yellow: #f3d77e;
   --lavender: #e8e2f5;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-family);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 90px; }
 body { margin: 0; background: var(--paper); color: var(--ink); }
+/* Decorative hero orbits extend past the viewport on small screens; never allow sideways scrolling. */
+main { overflow-x: clip; }
 button, select { font: inherit; }
 button, a, select { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-decoration: none; }
@@ -259,7 +262,8 @@ button { color: inherit; }
 .participant-card > p { margin: 0; color: #89978e; font-size: 8px; line-height: 1.55; }
 .preview-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; margin-top: 16px; }
 .preview-options span { min-height: 31px; display: flex; align-items: center; padding: 0 9px; border: 1px solid #e7ebe3; border-radius: 6px; color: #748277; font-size: 8px; }
-.preview-options span:nth-child(3) { border-color: #abc5a3; background: #f3f7f0; color: #53744f; }
+.preview-options span:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.preview-options span:nth-child(4) { border-color: #abc5a3; background: #f3f7f0; color: #53744f; }
 .preview-card-bottom { margin-top: 15px; padding-top: 11px; border-top: 1px solid #f0f1ec; display: flex; align-items: center; justify-content: space-between; color: #a3ada5; font-size: 7px; }
 .preview-card-bottom b { color: #d29b55; }
 .participant-note { position: absolute; right: -7px; bottom: 20px; display: flex; align-items: center; gap: 7px; padding: 10px 12px; border: 1px solid #ece6d3; border-radius: 7px; background: #fffcf1; color: #887958; box-shadow: 0 9px 18px rgba(76,67,40,.07); font-family: Georgia, serif; font-size: 10px; transform: rotate(-3deg); }

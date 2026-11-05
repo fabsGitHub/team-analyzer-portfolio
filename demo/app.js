@@ -46,10 +46,13 @@ const sampleGroups = {
   }
 };
 
+// Like the real app: five statements, each answered on a 1-5 scale.
 const surveyQuestions = [
   "I understand what matters most for our team right now.",
   "I can ask for help before a small blocker becomes a big one.",
-  "I have enough focus time to do my best work."
+  "I have enough focus time to do my best work.",
+  "I feel positive about where our team is heading.",
+  "Our team learns from what goes well and what does not."
 ];
 const ratingLabels = [
   "Not at all",
@@ -73,6 +76,14 @@ let toastTimer;
 
 function text(id, value) {
   document.getElementById(id).textContent = value;
+}
+
+// Keeps the smaller unit styling ("%", "/ 5") when a metric value changes.
+function metric(id, value, unit, unitClass) {
+  const unitEl = document.createElement("span");
+  if (unitClass) unitEl.className = unitClass;
+  unitEl.textContent = unit;
+  document.getElementById(id).replaceChildren(document.createTextNode(value), unitEl);
 }
 
 function makeSignalRow(signal) {
@@ -109,9 +120,9 @@ function renderGroup(groupName) {
   const group = sampleGroups[groupName] || sampleGroups.all;
   activeGroup = groupName;
 
-  text("metric-participation", group.participation + "%");
+  metric("metric-participation", group.participation, "%");
   text("metric-responses", group.responses);
-  text("metric-pulse", group.pulse + " / 5");
+  metric("metric-pulse", group.pulse, " / 5", "out-of");
   text("metric-change", group.change);
   text("conversation-change", group.conversation);
   text("metric-strength", group.strongest);
@@ -234,6 +245,10 @@ document.getElementById("survey-restart").addEventListener("click", function () 
   document.getElementById("survey-complete").hidden = true;
   document.getElementById("survey-shell").hidden = false;
   renderSurveyQuestion();
+});
+
+document.querySelectorAll("[data-current-year]").forEach(function (item) {
+  item.textContent = String(new Date().getFullYear());
 });
 
 renderGroup("all");

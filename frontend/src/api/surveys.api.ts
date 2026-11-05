@@ -44,16 +44,6 @@ export async function createSurvey(
   return data
 }
 
-export async function issueSurveyTokens(
-  id: string,
-  count: number,
-): Promise<string[]> {
-  const { data } = await http.post<string[]>(`/surveys/${id}/tokens/batch`, {
-    count,
-  })
-  return data
-}
-
 export async function getResultsDownloadLink(id: string): Promise<string> {
   const { data } = await http.post<{ url: string }>(
     `/surveys/${id}/download-tokens`,
@@ -107,9 +97,4 @@ export async function listMySurveys(): Promise<
     timeoutMs: 8000,
   })
   return data as any
-}
-
-export function buildSurveyInviteLink(surveyId: string, token: string): string {
-  const base = window.location.origin
-  return `${base}/surveys/${surveyId}?token=${encodeURIComponent(token)}`
 }

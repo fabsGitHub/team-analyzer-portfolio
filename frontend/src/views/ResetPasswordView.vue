@@ -47,14 +47,13 @@
                     {{ busy ? t('auth.resetPassword.saving') : t('auth.resetPassword.save') }}
                 </button>
 
-                <!-- Hinweise/Fehler -->
+                <!-- Hints and errors -->
                 <p v-if="attempted && !busy && !canSubmit && disabledReason" class="note err">
                     <strong>{{ t('auth.resetPassword.cantSubmit') }}</strong>
                     {{ ' ' + disabledReason }}
                 </p>
 
                 <p v-if="ok === true" class="note ok">{{ t('auth.resetPassword.ok') }}</p>
-                <p v-if="ok === false" class="note err">{{ t('auth.resetPassword.badToken') }}</p>
                 <p v-if="err" class="note err">{{ err }}</p>
             </form>
         </article>
@@ -65,6 +64,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { confirmPasswordReset } from '@/api/auth.api'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -119,20 +119,16 @@ async function onTrySubmit() {
 async function onSubmit() {
     busy.value = true
     try {
-        const res = await fetch('/api/auth/reset/confirm', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: token.value, newPassword: pwd1.value }),
-        })
-        ok.value = res.ok
-        if (res.ok) {
-            setTimeout(() => router.replace('/auth'), 1200)
-        } else {
-            err.value = (await res.text().catch(() => '')) || t('auth.resetPassword.genericErr')
-        }
+        await confirmPasswordReset(token.value, pwd1.value)
+        ok.value = true
+        setTimeout(() => router.replace('/auth'), 1200)
     } catch (e: any) {
-        err.value = e?.message || String(e)
         ok.value = false
+        // 400 without field errors means the token was unknown, used or expired.
+        const invalidToken = e?.response?.status === 400 && !e?.response?.data?.errors
+        err.value = invalidToken
+            ? t('auth.resetPassword.badToken')
+            : t('auth.resetPassword.genericErr')
     } finally {
         busy.value = false
     }

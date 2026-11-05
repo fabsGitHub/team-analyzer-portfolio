@@ -1,11 +1,13 @@
 // src/api/auth.api.ts
 import { http, ClientUtils } from './client'
 
+const AUTH_REQUEST_TIMEOUT_MS = 15_000
+
 export async function register(email: string, password: string): Promise<void> {
   await http.post(
     '/auth/register',
     { email, password },
-    { skipAuthHeader: true },
+    { skipAuthHeader: true, timeoutMs: AUTH_REQUEST_TIMEOUT_MS },
   )
 }
 
@@ -16,7 +18,7 @@ export async function login(
   const { data } = await http.post<{ accessToken: string }>(
     '/auth/login',
     { email, password },
-    { skipAuthHeader: true },
+    { skipAuthHeader: true, timeoutMs: AUTH_REQUEST_TIMEOUT_MS },
   )
   return data
 }
@@ -45,6 +47,17 @@ export async function resetPassword(email: string): Promise<void> {
   await http.post('/auth/reset', { email }, { skipAuthHeader: true })
 }
 
-export async function verifyEmail(token: string): Promise<void> {
-  await http.post('/auth/verify', { token }, { skipAuthHeader: true })
+export async function confirmPasswordReset(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  await http.post(
+    '/auth/reset/confirm',
+    { token, newPassword },
+    { skipAuthHeader: true },
+  )
+}
+
+export async function verifyEmail(token: string, password: string): Promise<void> {
+  await http.post('/auth/verify', { token, password }, { skipAuthHeader: true })
 }

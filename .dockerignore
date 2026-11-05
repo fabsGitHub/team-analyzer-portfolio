@@ -8,3 +8,9 @@ gitkey
 *.key
 .env
 .env.*
+frontend/dist
+**/coverage
+demo
+.github
+.vscode
+.idea

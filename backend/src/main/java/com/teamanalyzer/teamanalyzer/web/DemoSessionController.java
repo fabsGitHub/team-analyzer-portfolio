@@ -17,6 +17,8 @@ import com.teamanalyzer.teamanalyzer.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +35,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "app.demo", name = "enabled", havingValue = "true")
 public class DemoSessionController {
+  private static final Logger log = LoggerFactory.getLogger(DemoSessionController.class);
   private static final Duration REFRESH_TTL = Duration.ofHours(24);
   private static final Duration RATE_WINDOW = Duration.ofHours(1);
   private static final int MAX_SESSIONS_PER_IP_PER_HOUR = 20;
@@ -51,6 +54,14 @@ public class DemoSessionController {
       HttpServletRequest request,
       HttpServletResponse response) {
     enforceRateLimit(clientAddress(request));
+
+    // Serverless containers may sleep through the scheduled cleanup, so expired workspaces are
+    // also removed here, in their own transaction: a failure must not block the new demo.
+    try {
+      workspaces.cleanupExpiredWorkspaces();
+    } catch (RuntimeException ex) {
+      log.warn("Could not delete expired demo workspaces: {}", ex.toString());
+    }
 
     DemoWorkspaceService.DemoWorkspace workspace = workspaces.createWorkspace();
     String accessToken = jwt.createAccessToken(workspace.user());
@@ -75,13 +86,18 @@ public class DemoSessionController {
     return ResponseEntity.ok(new DemoSessionResponse(accessToken, workspace.surveyId()));
   }
 
+  /**
+   * The client address for the rate limit, from headers the proxy in front of the API
+   * overwrites: Vercel sets {@code x-vercel-forwarded-for}, the nginx container sets
+   * {@code X-Real-IP}. The first {@code X-Forwarded-For} entry is not used, because nginx
+   * appends to whatever the client sent there.
+   */
   private String clientAddress(HttpServletRequest request) {
-    String forwarded = request.getHeader("x-vercel-forwarded-for");
-    if (forwarded == null || forwarded.isBlank()) {
-      forwarded = request.getHeader("x-forwarded-for");
-    }
-    if (forwarded != null && !forwarded.isBlank()) {
-      return forwarded.split(",")[0].trim();
+    for (String header : new String[] { "x-vercel-forwarded-for", "x-real-ip" }) {
+      String value = request.getHeader(header);
+      if (value != null && !value.isBlank()) {
+        return value.split(",")[0].trim();
+      }
     }
     return request.getRemoteAddr() == null ? "unknown" : request.getRemoteAddr();
   }

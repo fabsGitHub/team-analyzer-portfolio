@@ -29,7 +29,7 @@ export function useSurveyResults(surveyId: string) {
       results.value = r
     } catch (e: any) {
       error.value =
-        e?.response?.data?.message || e?.message || 'Unbekannter Fehler'
+        e?.response?.data?.detail || e?.message || t('results.unknownError')
       errorStatus.value = e?.response?.status ?? null
     } finally {
       loading.value = false
@@ -42,14 +42,15 @@ export function useSurveyResults(surveyId: string) {
     average: number
     total: number
   }
+  /** Distribution of answers (index 0 = value 1 ... index 4 = value 5) for one question. */
   function countsForQuestion(
     items: SingleSurveyResultDto[],
-    qIndex1: number,
+    questionId: string | undefined,
   ): number[] {
     const counts = [0, 0, 0, 0, 0]
-    const key = `q${qIndex1}` as keyof SingleSurveyResultDto
+    if (!questionId) return counts
     for (const it of items) {
-      const v = Number((it as any)[key])
+      const v = Number(it.answers?.[questionId])
       if (v >= 1 && v <= 5) counts[v - 1]++
     }
     return counts
@@ -57,9 +58,9 @@ export function useSurveyResults(surveyId: string) {
 
   const norm = computed<QNorm[]>(() => {
     if (!results.value || !survey.value) return []
-    const labels =
-      survey.value.questions?.map((q) => q.text) ??
-      Array.from({ length: 5 }, (_, i) => `Frage ${i + 1}`)
+    const questions = [...(survey.value.questions ?? [])].sort(
+      (a, b) => a.idx - b.idx,
+    )
     const items = results.value.items ?? []
     const n = results.value.n ?? items.length
     const avgs = [
@@ -69,9 +70,9 @@ export function useSurveyResults(surveyId: string) {
       results.value.a4,
       results.value.a5,
     ]
-    return labels.slice(0, 5).map((label, idx) => {
-      const qi = idx + 1
-      const counts = countsForQuestion(items, qi)
+    return questions.slice(0, 5).map((question, idx) => {
+      const label = question.text || t('results.questionN', { n: idx + 1 })
+      const counts = countsForQuestion(items, question.id)
       const total = n
       let average = avgs[idx]
       if (typeof average !== 'number' || Number.isNaN(average)) {
