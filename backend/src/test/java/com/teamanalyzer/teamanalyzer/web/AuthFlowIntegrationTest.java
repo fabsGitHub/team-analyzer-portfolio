@@ -46,7 +46,8 @@ import jakarta.servlet.http.Cookie;
  * End-to-end authentication flow against a real MySQL schema (Testcontainers + Flyway).
  * Outgoing mail is captured so verification and reset links can be followed.
  */
-@SpringBootTest
+// Demo mode pinned off: an exported APP_DEMO_ENABLED would otherwise outrank the test config.
+@SpringBootTest(properties = "app.demo.enabled=false")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class AuthFlowIntegrationTest {
@@ -149,7 +150,7 @@ class AuthFlowIntegrationTest {
         mvc.perform(post("/api/auth/no-such-endpoint"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
-        // The demo endpoint is public but absent while demo mode is off (the default), so the
+        // The demo endpoint is public but absent while demo mode is off, so the
         // landing page can tell "not enabled" apart from "service unavailable".
         mvc.perform(post("/api/demo/session"))
                 .andExpect(status().isNotFound());

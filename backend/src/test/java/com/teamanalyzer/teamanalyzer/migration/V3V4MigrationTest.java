@@ -25,6 +25,9 @@ import com.teamanalyzer.teamanalyzer.domain.User;
 @Testcontainers
 class V3V4MigrationTest {
 
+    /** The recovery step V3's collision message tells operators to run. */
+    private static final String RECOVERY = "DELETE FROM flyway_schema_history WHERE version = '3' AND success = 0";
+
     @Container
     static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.6");
 
@@ -65,15 +68,21 @@ class V3V4MigrationTest {
         assertThatThrownBy(() -> flyway(db, null).migrate())
                 .rootCause()
                 .hasMessageContaining("carol@example.test")
-                .hasMessageContaining("Merge or delete the duplicates");
+                .hasMessageContaining("Merge or delete the duplicates")
+                .hasMessageContaining(RECOVERY);
 
         assertThat(collation(db)).isEqualTo("utf8mb4_0900_ai_ci"); // nothing was altered
         assertThat(emails(db)).containsExactlyInAnyOrder("carol@example.test", "carol@example.test ");
 
-        // The recovery the message describes: remove the duplicate and the failed history record.
+        // The recovery the message describes. Removing the duplicate alone is not enough, because
+        // Flyway recorded the stopped attempt as failed ...
         try (Connection c = connect(db); Statement st = c.createStatement()) {
             st.execute("delete from users where email = 'carol@example.test '");
-            st.execute("DELETE FROM flyway_schema_history WHERE version = '3' AND success = 0");
+        }
+        assertThatThrownBy(() -> flyway(db, null).migrate()).hasMessageContaining("failed");
+        // ... so that record has to go as well; then the migrations run.
+        try (Connection c = connect(db); Statement st = c.createStatement()) {
+            assertThat(st.executeUpdate(RECOVERY)).isEqualTo(1);
         }
         flyway(db, null).migrate();
         assertThat(emails(db)).containsExactly("carol@example.test");
