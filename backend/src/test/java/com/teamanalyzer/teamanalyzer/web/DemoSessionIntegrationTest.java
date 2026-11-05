@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.teamanalyzer.teamanalyzer.service.DemoWorkspaceService;
+import com.teamanalyzer.teamanalyzer.service.DemoWorkspaceCleanup;
 
 /**
  * "Try the live demo": a private, seeded workspace per click, signed in for 24 hours and
@@ -41,7 +41,7 @@ class DemoSessionIntegrationTest {
     @Autowired
     JdbcTemplate jdbc;
     @Autowired
-    DemoWorkspaceService demo;
+    DemoWorkspaceCleanup demo;
 
     @Test
     void a_demo_session_opens_a_seeded_workspace_for_24_hours() throws Exception {

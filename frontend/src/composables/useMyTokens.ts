@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as Surveys from '@/api/surveys.api'
+import { apiErrorMessage } from '@/api/errors'
 
 type MyOpenToken = Awaited<ReturnType<typeof Surveys.listMyOpenTokens>>[number]
 
@@ -35,9 +36,8 @@ export function useMyTokens() {
       }
       if (!inviteLink) throw new Error(t('tokens.noInviteLink'))
       window.location.href = inviteLink
-    } catch (e: any) {
-      error.value =
-        e?.response?.data?.message || e?.message || t('tokens.openError')
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, t, t('tokens.openError'))
     } finally {
       busyId.value = null
     }

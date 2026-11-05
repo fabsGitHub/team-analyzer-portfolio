@@ -80,6 +80,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store'
 import { SOURCE_REPOSITORY_URL } from '@/project'
+import { demoLimitMessage } from '@/api/errors'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -97,11 +98,12 @@ async function startDemo() {
   } catch (cause: any) {
     const status = cause?.response?.status
     error.value =
-      status === 429
+      demoLimitMessage(cause, t) ??
+      (status === 429
         ? t('landing.demoRateLimited')
         : status === 404
           ? t('landing.demoDisabled')
-          : t('landing.demoUnavailable')
+          : t('landing.demoUnavailable'))
   } finally {
     busy.value = false
   }

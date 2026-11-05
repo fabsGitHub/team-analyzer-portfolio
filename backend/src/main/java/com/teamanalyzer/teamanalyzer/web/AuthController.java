@@ -1,5 +1,7 @@
 package com.teamanalyzer.teamanalyzer.web;
 
+import com.teamanalyzer.teamanalyzer.config.DemoProperties;
+import com.teamanalyzer.teamanalyzer.domain.DemoAccounts;
 import com.teamanalyzer.teamanalyzer.domain.RefreshToken;
 import com.teamanalyzer.teamanalyzer.domain.User;
 import com.teamanalyzer.teamanalyzer.port.AppClock;
@@ -55,6 +57,7 @@ public class AuthController {
     private final String frontendBaseUrl;
     private final String verifyEndpointPath;
     private final AccountVerificationService accountVerification;
+    private final DemoProperties demo;
 
     @Value("${app.mail.enabled:false}")
     private boolean mailEnabled;
@@ -76,7 +79,8 @@ public class AuthController {
             @Value("${app.frontend-base-url}") String frontendBaseUrl,
             AccountVerificationService accountVerification,
             @Value("${app.verify-endpoint-path}") String verifyEndpointPath,
-            AppClock clock) {
+            AppClock clock,
+            DemoProperties demo) {
         this.users = users;
         this.tokens = tokens;
         this.enc = enc;
@@ -88,6 +92,7 @@ public class AuthController {
         this.accountVerification = accountVerification;
         this.verifyEndpointPath = verifyEndpointPath;
         this.clock = clock;
+        this.demo = demo;
     }
 
     private ResponseCookie buildRefreshCookie(String value, HttpServletRequest req, long maxAgeSeconds) {
@@ -104,6 +109,10 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterDto dto) {
         String email = User.normalizeEmail(dto.email());
+        if (DemoAccounts.isDemoEmail(email)) {
+            // Reserved for generated demo workspaces, which are limited and deleted by address.
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This email address is reserved.");
+        }
         String passwordHash = enc.encode(dto.password());
 
         var existing = users.findByEmail(email);
@@ -219,8 +228,21 @@ public class AuthController {
         if (rt.getExpiresAt().isBefore(clock.now()) || rt.isRevoked())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 
-        rt.setRevoked(true);
-        tokens.save(rt);
+        boolean demoAccount = DemoAccounts.isDemoEmail(rt.getUser().getEmail());
+        if (demoAccount && !demo.enabled()) {
+            // Demo mode was switched off: its sessions end now, not when cleanup deletes them.
+            rt.setRevoked(true);
+            tokens.save(rt);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        if (demoAccount) {
+            // Anyone can use a demo session, so rotating it must not leave a row behind each time.
+            tokens.delete(rt);
+        } else {
+            rt.setRevoked(true);
+            tokens.save(rt);
+        }
 
         var newPlain = UUID.randomUUID().toString() + "." + UUID.randomUUID();
         var newHashB64 = sha256Base64Url(newPlain);
@@ -267,10 +289,7 @@ public class AuthController {
 
     /** Demo workspaces are deleted after 24 hours, so their sessions must not outlive them. */
     private static Duration refreshLifetimeFor(User user) {
-        String email = user.getEmail();
-        return email != null && email.startsWith("demo+") && email.endsWith("@example.invalid")
-                ? Duration.ofHours(24)
-                : Duration.ofDays(14);
+        return DemoAccounts.isDemoEmail(user.getEmail()) ? Duration.ofHours(24) : Duration.ofDays(14);
     }
 
     // SHA-256 -> Base64URL (no padding)
