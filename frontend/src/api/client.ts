@@ -1,6 +1,7 @@
 // src/api/client.ts
 import axios, {
   AxiosError,
+  CanceledError,
   type AxiosRequestConfig,
   type AxiosResponse,
   type GenericAbortSignal,
@@ -275,12 +276,34 @@ export function warmUpBackend(): Promise<boolean> {
   return wakeBackend(API_BASE, false)
 }
 
-// REQUEST-INTERCEPTOR: Wake-up, CancelGroup, Timeout, Signal, Authorization
-http.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-  // A stopped backend needs ~20-30 s to start; wait for it before the per-request timeout runs.
-  await wakeBackend(API_BASE, !config.quietWake)
+/** Waits for `wait`, but rejects with a CanceledError as soon as one of the signals aborts. */
+function untilAborted<T>(
+  wait: Promise<T>,
+  config: InternalAxiosRequestConfig,
+  ...signals: (GenericAbortSignal | undefined)[]
+): Promise<T> {
+  const active = signals.filter((s): s is GenericAbortSignal => !!s)
+  if (!active.length) return wait
+  return new Promise<T>((resolve, reject) => {
+    const cancel = (s: GenericAbortSignal) => {
+      const err = new CanceledError(String((s as any).reason ?? 'canceled'))
+      ;(err as any).config = config
+      reject(err)
+    }
+    const listeners = active.map((s) => {
+      const onAbort = () => cancel(s)
+      s.addEventListener?.('abort', onAbort)
+      return () => s.removeEventListener?.('abort', onAbort)
+    })
+    const aborted = active.find((s) => s.aborted)
+    if (aborted) cancel(aborted)
+    wait.then(resolve, reject).finally(() => listeners.forEach((remove) => remove()))
+  })
+}
 
-  // Cancel-Group
+// REQUEST-INTERCEPTOR: CancelGroup, Wake-up, Timeout, Signal, Authorization
+http.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  // Cancel-Group (registered before the wake-up, so abortGroup() also cancels a waiting request)
   let controller: AbortController | undefined
   if (config.cancelGroup) {
     inflightByGroup.get(config.cancelGroup)?.abort('newer request')
@@ -288,6 +311,14 @@ http.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
     inflightByGroup.set(config.cancelGroup, controller)
     ;(config as any)._abortController = controller
   }
+
+  // A stopped backend needs ~20-30 s to start; wait for it before the per-request timeout runs.
+  await untilAborted(
+    wakeBackend(API_BASE, !config.quietWake),
+    config,
+    controller?.signal,
+    config.signal,
+  )
 
   // Per-Request Timeout
   if (config.timeoutMs) {

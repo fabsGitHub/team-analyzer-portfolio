@@ -37,14 +37,20 @@ export function wakeBackend(apiBase: string, visible = true): Promise<boolean> {
   if (!pending) {
     const controller = new AbortController()
     const giveUp = setTimeout(() => controller.abort(), PING_TIMEOUT_MS)
+    // Sent like the API calls themselves (same-origin cookies), so a protection layer in front of
+    // the API (e.g. Vercel Deployment Protection) lets it through to the container. Redirects are
+    // not followed: a login page must not look like an awake API.
     pending = fetch(`${apiBase}/ping`, {
       cache: 'no-store',
-      credentials: 'omit',
+      redirect: 'manual',
       signal: controller.signal,
     })
       .then((r) => {
-        noteBackendAnswer(r.status)
-        return r.status < 500
+        // Only the API's own answer proves it is up; a 401/403 or redirect from a layer in front of
+        // it does not.
+        const awake = r.status === 204
+        if (awake) noteBackendAnswer(r.status)
+        return awake
       })
       .catch(() => false)
       .finally(() => {
