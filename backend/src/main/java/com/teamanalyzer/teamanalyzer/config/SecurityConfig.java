@@ -38,6 +38,7 @@ public class SecurityConfig {
       "/actuator/health",
       "/actuator/health/**",
       "/api/demo/session",
+      "/api/ping",
       "/api/auth/**"
   };
 

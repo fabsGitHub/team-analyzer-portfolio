@@ -6,6 +6,7 @@ import axios, {
   type GenericAbortSignal,
   type InternalAxiosRequestConfig,
 } from 'axios'
+import { noteBackendAnswer, wakeBackend } from './wakeup'
 
 /** Axios-Config erweitern (Flags + interne Felder) */
 declare module 'axios' {
@@ -15,6 +16,8 @@ declare module 'axios' {
     cancelGroup?: string
     retry?: number
     timeoutMs?: number
+    /** Background request: wait for a sleeping backend without telling the visitor. */
+    quietWake?: boolean
     _retry?: boolean
     _retryCount?: number
     _abortController?: AbortController
@@ -27,6 +30,7 @@ declare module 'axios' {
     cancelGroup?: string
     retry?: number
     timeoutMs?: number
+    quietWake?: boolean
     _retry?: boolean
     _retryCount?: number
     _abortController?: AbortController
@@ -237,6 +241,8 @@ export async function fetchMeOnce(allowAnonymous = false) {
     mePromise = http
       .get('/me', {
         allowAnonymous,
+        // The anonymous check runs on every page load in the background.
+        quietWake: allowAnonymous,
         cancelGroup: 'me',
         retry: 0,
         timeoutMs: 8000,
@@ -264,8 +270,16 @@ async function ensureAccessTokenForRequest(
   }
 }
 
-// REQUEST-INTERCEPTOR: CancelGroup, Timeout, Signal, Authorization
+/** Starts a sleeping backend early (call on app start); requests also wait for it on their own. */
+export function warmUpBackend(): Promise<boolean> {
+  return wakeBackend(API_BASE, false)
+}
+
+// REQUEST-INTERCEPTOR: Wake-up, CancelGroup, Timeout, Signal, Authorization
 http.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  // A stopped backend needs ~20-30 s to start; wait for it before the per-request timeout runs.
+  await wakeBackend(API_BASE, !config.quietWake)
+
   // Cancel-Group
   let controller: AbortController | undefined
   if (config.cancelGroup) {
@@ -318,12 +332,14 @@ function cleanupAfterResponse(
 http.interceptors.response.use(
   (r) => {
     cleanupAfterResponse(r.config as InternalAxiosRequestConfig)
+    noteBackendAnswer(r.status)
     return r
   },
   async (error: AxiosError) => {
     const cfg = error.config as InternalAxiosRequestConfig | undefined
     const resp = error.response
     cleanupAfterResponse(cfg)
+    noteBackendAnswer(resp?.status)
     if (!cfg) return Promise.reject(error)
 
     const urlStr = (cfg.url ?? '').toString()

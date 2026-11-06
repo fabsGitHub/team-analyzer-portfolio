@@ -47,7 +47,19 @@ Email verification depends on a real transactional email provider. Do not set `L
 
 In Brevo, create and verify a sender, then generate an API key from SMTP & API settings. Configure `APP_MAIL_PROVIDER=brevo-api`, `BREVO_API_KEY`, `SPRING_MAIL_FROM` (the verified sender), and optionally `SPRING_MAIL_FROM_NAME`. Keep the API key only in Vercel's environment variables. The app sends verification and password-reset messages through Brevo's transactional email API. To use SMTP instead, set `APP_MAIL_PROVIDER=smtp` and provide the SMTP host, username, SMTP key, and port. SMTP connection, read, and write timeouts and the HTTP timeouts for the Brevo API (5 s connect, 10 s read) are capped, so a stalled provider cannot leave signup or reset requests waiting indefinitely.
 
+Brevo can block API calls from unknown IP addresses (**Security → Authorised IPs**). Vercel containers have no fixed outbound IP addresses, so turn that blocking off for the key the app uses; otherwise every email fails with "unrecognised IP address" in the API log.
+
 For reliable delivery to Gmail, Yahoo, and Microsoft inboxes, authenticate the sender domain with DKIM and DMARC in Brevo. The `vercel.app` domain is managed by Vercel, so it cannot be authenticated by this project's owner. Without a domain you control, Brevo may rewrite the sender address and delivery cannot be guaranteed. Verify delivery to an inbox you control before inviting anyone to register.
+
+## When the API does not start
+
+The API stops during startup, instead of failing later, when a required setting is missing: the database connection, `BREVO_API_KEY` or `SPRING_MAIL_FROM` (with the default Brevo provider), or a signing secret that is too short. On Vercel this shows up as `500 FUNCTION_INVOCATION_FAILED` on every `/api` request while the page itself still loads. Without the `MYSQL_*`/`TIDB_*` variables the API tries `localhost:4000` and stops with "Communications link failure". Check the variable names in **Settings → Environment Variables** for the Production environment and redeploy after changing them, because running deployments keep their old values.
+
+The database named in `MYSQL_DATABASE` must exist; Flyway creates the tables in it. On a new TiDB Cloud Starter cluster, run `CREATE DATABASE teambase;` once in the SQL editor.
+
+## Cold starts
+
+Vercel stops the API container after a few idle minutes. The next request waits while it starts again, typically 15–30 seconds. The frontend handles this: it pings `GET /api/ping` as soon as a page loads, and before any API request after a quiet minute it waits for that ping (up to 90 seconds) before the request's own timeout starts. While the wait is noticeable, the app shows "Starting the server…". The container's JVM flags in `backend/Dockerfile.vercel` favour fast startup over peak throughput.
 
 ## Demo workspaces
 

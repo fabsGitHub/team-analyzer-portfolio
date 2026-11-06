@@ -13,5 +13,8 @@ RUN groupadd --system spring && useradd --system --gid spring --home-dir /app --
 COPY --from=build --chown=spring:spring /workspace/target/team-analyzer.jar /app/app.jar
 USER spring
 EXPOSE 8080
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+# Vercel stops the container after a few idle minutes, so start-up time is what visitors feel.
+# C1-only JIT and the serial GC start about a third faster on a small container; peak throughput
+# matters little for this demo.
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError -XX:TieredStopAtLevel=1 -XX:+UseSerialGC"
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

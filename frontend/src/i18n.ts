@@ -310,6 +310,7 @@ const de = {
   },
   common: {
     saving: 'Speichern…',
+    wakingUp: 'Der Server startet. Nach einer Pause dauert das bis zu 30 Sekunden, bitte lass die Seite geöffnet.',
   },
   dialog: {
     closeAria: 'Dialog schließen',
@@ -685,6 +686,7 @@ const en = {
   },
   common: {
     saving: 'Saving…',
+    wakingUp: 'Starting the server. After a quiet period this takes up to 30 seconds, please keep this page open.',
   },
   dialog: {
     closeAria: 'Close dialog',
