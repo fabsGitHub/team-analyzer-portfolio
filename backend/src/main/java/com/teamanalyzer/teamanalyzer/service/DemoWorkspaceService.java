@@ -1,10 +1,13 @@
 package com.teamanalyzer.teamanalyzer.service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.teamanalyzer.teamanalyzer.config.DemoProperties;
+import com.teamanalyzer.teamanalyzer.domain.DemoAccounts;
 import com.teamanalyzer.teamanalyzer.domain.Role;
 import com.teamanalyzer.teamanalyzer.domain.Survey;
 import com.teamanalyzer.teamanalyzer.domain.SurveyAnswer;
@@ -19,24 +22,19 @@ import com.teamanalyzer.teamanalyzer.repo.SurveyResponseRepository;
 import com.teamanalyzer.teamanalyzer.repo.TeamMemberRepository;
 import com.teamanalyzer.teamanalyzer.repo.TeamRepository;
 import com.teamanalyzer.teamanalyzer.repo.UserRepository;
+import com.teamanalyzer.teamanalyzer.service.DemoLimitExceededException.Limit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Creates the seeded workspaces behind "Try the live demo". Expired ones: {@link DemoWorkspaceCleanup}. */
 @Service
 @ConditionalOnProperty(prefix = "app.demo", name = "enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class DemoWorkspaceService {
-  /**
-   * Workspaces expire 24 hours after their account was created. The cutoff is computed by the
-   * database, in the same time zone as the TIMESTAMP column, so the JVM's zone cannot skew it.
-   */
-  private static final String EXPIRED = "created_at < CURRENT_TIMESTAMP - INTERVAL 24 HOUR";
-  private static final String DEMO_EMAIL_PATTERN = "demo+%@example.invalid";
   private static final List<String> QUESTIONS = List.of(
       "Our team is clear about its most important priorities.",
       "I can ask for help before a blocker becomes a problem.",
@@ -61,11 +59,19 @@ public class DemoWorkspaceService {
   private final SurveyQuestionRepository questions;
   private final SurveyResponseRepository responses;
   private final JdbcTemplate jdbc;
+  private final DemoProperties demo;
 
+  /**
+   * Creates a seeded workspace, unless the global limits are reached: at most
+   * {@code maxLiveWorkspaces} demo accounts at a time and {@code maxSessionsPerHour} new ones per
+   * hour. Both are counted in the database, so they hold across API instances. Concurrent starts
+   * are not serialised, so a burst can pass a limit by the number of requests in flight.
+   */
   @Transactional
   public DemoWorkspace createWorkspace() {
+    ensureCapacity();
     UUID workspaceKey = UUID.randomUUID();
-    String email = "demo+" + workspaceKey + "@example.invalid";
+    String email = DemoAccounts.emailFor(workspaceKey);
     User user = User.of(email, passwordEncoder.encode(UUID.randomUUID() + UUID.randomUUID().toString()));
     user.verifyEmailNow(Instant.now());
     user.getRoles().add(Role.LEADER);
@@ -105,39 +111,25 @@ public class DemoWorkspaceService {
     return new DemoWorkspace(user, survey.getId());
   }
 
-  /**
-   * Deletes demo accounts older than 24 hours together with their teams (surveys, tokens,
-   * responses and answers cascade). Only teams without any non-demo member are deleted, so a
-   * demo account that was added to a real team never takes that team with it.
-   */
-  @Scheduled(fixedDelayString = "${app.demo.cleanup-interval-ms:3600000}")
-  @Transactional
-  public void cleanupExpiredWorkspaces() {
-    jdbc.update("""
-        DELETE FROM teams
-         WHERE id IN (
-           SELECT team_id FROM (
-             SELECT tm.team_id
-               FROM team_members tm
-               JOIN users u ON u.id = tm.user_id
-              WHERE u.email LIKE ?
-                AND u.%s
-                AND NOT EXISTS (
-                  SELECT 1
-                    FROM team_members other
-                    JOIN users ou ON ou.id = other.user_id
-                   WHERE other.team_id = tm.team_id
-                     AND ou.email NOT LIKE ?)
-           ) expired_demo_teams
-         )
-        """.formatted(EXPIRED), DEMO_EMAIL_PATTERN, DEMO_EMAIL_PATTERN);
-    // A demo account that still owns a survey in a kept team stays until that survey is gone.
-    jdbc.update("""
-        DELETE FROM users
+  private void ensureCapacity() {
+    // Every demo account in the table counts, expired or not: if cleanup falls behind, new demos
+    // stop instead of the table growing.
+    int live = count("SELECT COUNT(*) FROM users WHERE email LIKE ?");
+    if (live >= demo.maxLiveWorkspaces()) {
+      throw new DemoLimitExceededException(Limit.CAPACITY, demo.maxLiveWorkspaces(), Duration.ofHours(1));
+    }
+    int lastHour = count("""
+        SELECT COUNT(*) FROM users
          WHERE email LIKE ?
-           AND %s
-           AND NOT EXISTS (SELECT 1 FROM surveys s WHERE s.created_by = users.id)
-        """.formatted(EXPIRED), DEMO_EMAIL_PATTERN);
+           AND created_at >= CURRENT_TIMESTAMP - INTERVAL 1 HOUR""");
+    if (lastHour >= demo.maxSessionsPerHour()) {
+      throw new DemoLimitExceededException(Limit.HOURLY, demo.maxSessionsPerHour(), Duration.ofHours(1));
+    }
+  }
+
+  private int count(String sql) {
+    Integer n = jdbc.queryForObject(sql, Integer.class, DemoAccounts.EMAIL_LIKE);
+    return n == null ? 0 : n;
   }
 
   public record DemoWorkspace(User user, UUID surveyId) {

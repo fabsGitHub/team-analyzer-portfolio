@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.teamanalyzer.teamanalyzer.config.DemoProperties;
+import com.teamanalyzer.teamanalyzer.domain.DemoAccounts;
 import com.teamanalyzer.teamanalyzer.security.AuthUser;
 import com.teamanalyzer.teamanalyzer.service.JwtService;
 
@@ -37,9 +39,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static final String ROLE_PREFIX = "ROLE_";
 
     private final JwtService jwtService;
+    private final DemoProperties demo;
 
-    public JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(JwtService jwtService, DemoProperties demo) {
         this.jwtService = jwtService;
+        this.demo = demo;
     }
 
     @Override
@@ -68,6 +72,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             JWTClaimsSet claims = jwtService.validate(token);
 
             String email = extractEmail(claims);
+            if (!demo.enabled() && DemoAccounts.isDemoEmail(email)) {
+                // Demo mode is off: tokens issued to demo accounts no longer sign anyone in.
+                LOG.debug("Ignoring demo account token for {}: demo mode is off", req.getRequestURI());
+                chain.doFilter(req, res);
+                return;
+            }
             UUID userId = parseUuidOrNull(readUidAsString(claims));
             List<String> roles = extractRoleNames(claims);
 

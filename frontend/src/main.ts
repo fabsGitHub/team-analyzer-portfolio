@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import { i18n } from './i18n'
+import { warmUpBackend } from './api/client'
 import './styles.css'
 
 const app = createApp(App).use(i18n).use(router)
@@ -21,5 +22,8 @@ app.config.errorHandler = (err, info) => {
     document.body.appendChild(box)
   }
 }
+
+// Start a sleeping backend while the visitor is still reading the page.
+void warmUpBackend()
 
 app.mount('#app')

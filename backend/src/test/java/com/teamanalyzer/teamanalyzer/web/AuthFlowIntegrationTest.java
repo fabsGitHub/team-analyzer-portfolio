@@ -157,6 +157,13 @@ class AuthFlowIntegrationTest {
     }
 
     @Test
+    void ping_is_public_and_not_cached() throws Exception {
+        mvc.perform(get("/api/ping"))
+                .andExpect(status().isNoContent())
+                .andExpect(header().string("Cache-Control", "no-store"));
+    }
+
+    @Test
     void health_endpoint_is_public() throws Exception {
         mvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())

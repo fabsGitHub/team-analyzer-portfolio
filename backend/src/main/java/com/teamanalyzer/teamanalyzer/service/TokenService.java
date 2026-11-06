@@ -33,6 +33,7 @@ public class TokenService {
     private final SurveyTokenRepository tokenRepo;
     private final SurveyRepository surveyRepo;
     private final TeamMemberRepository tmRepo;
+    private final DemoQuotaService demoQuotas;
     private final AppClock clock;
 
     @PersistenceContext
@@ -72,6 +73,9 @@ public class TokenService {
         if (existing.isPresent())
             return null;
 
+        // Demo surveys get a limited number of tokens (and therefore of responses).
+        demoQuotas.claimToken(survey.getId(), email);
+
         String plain = UUID.randomUUID().toString();
         byte[] hash = digest.sha256(plain);
         log.info("ISSUE new token: hash={}", HexFormat.of().formatHex(hash)); // kein plain!
@@ -94,6 +98,7 @@ public class TokenService {
 
     @Transactional
     public String renewPersonalToken(Survey survey, UUID userId, @Nullable String email) {
+        demoQuotas.lockWorkspaceForTokens(survey.getId(), email);
         revokeOpenTokensForUser(survey.getId(), userId);
         var plain = ensurePersonalToken(survey, userId, email);
         if (plain == null) {

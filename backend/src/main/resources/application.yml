@@ -72,8 +72,20 @@ app:
     secret: ${APP_JWT_SECRET_BASE64}
   demo:
     # Public "try it" workspaces (seeded team, survey and responses, deleted after 24 hours).
+    # While off, demo accounts cannot sign in or refresh; expired workspaces are still deleted.
     enabled: ${APP_DEMO_ENABLED:false}
     cleanup-interval-ms: ${APP_DEMO_CLEANUP_INTERVAL_MS:3600000}
+    # Limits for anonymous visitors (see docs/VERCEL_DEPLOYMENT.md, "Demo workspaces").
+    # Demo starts per client address and hour, kept in memory by each API instance ...
+    max-sessions-per-address-per-hour: ${APP_DEMO_MAX_SESSIONS_PER_ADDRESS_PER_HOUR:20}
+    # ... for at most this many addresses (the least recently seen one is forgotten first).
+    tracked-addresses: ${APP_DEMO_TRACKED_ADDRESSES:10000}
+    # Counted in the database, across all instances:
+    max-sessions-per-hour: ${APP_DEMO_MAX_SESSIONS_PER_HOUR:100}
+    max-live-workspaces: ${APP_DEMO_MAX_LIVE_WORKSPACES:300}
+    # Per workspace: surveys (the seeded one included) and participation links per survey.
+    max-surveys-per-workspace: ${APP_DEMO_MAX_SURVEYS_PER_WORKSPACE:10}
+    max-tokens-per-survey: ${APP_DEMO_MAX_TOKENS_PER_SURVEY:20}
   mail:
     # Without a mail server, outgoing messages are skipped and only logged (without links).
     enabled: false
