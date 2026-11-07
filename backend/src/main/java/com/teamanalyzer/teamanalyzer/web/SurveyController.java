@@ -16,7 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.teamanalyzer.teamanalyzer.domain.Survey;
 import com.teamanalyzer.teamanalyzer.domain.Role;
 import com.teamanalyzer.teamanalyzer.repo.SurveyRepository;
