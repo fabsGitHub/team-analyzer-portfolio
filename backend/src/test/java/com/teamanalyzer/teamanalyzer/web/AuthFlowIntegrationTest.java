@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mail.MailSendException;
@@ -36,7 +36,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.teamanalyzer.teamanalyzer.port.EmailSender;
 import com.teamanalyzer.teamanalyzer.repo.UserRepository;
 
@@ -91,7 +91,7 @@ class AuthFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andReturn();
-        String access = json.readTree(login.getResponse().getContentAsString()).get("accessToken").asText();
+        String access = json.readTree(login.getResponse().getContentAsString()).get("accessToken").asString();
         Cookie refresh = login.getResponse().getCookie("refresh_token");
         assertThat(refresh).isNotNull();
         assertThat(refresh.isHttpOnly()).isTrue();

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,7 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.teamanalyzer.teamanalyzer.port.EmailSender;
 
 /**
@@ -77,7 +77,7 @@ class BootstrapAdminIntegrationTest {
         List<String> links = confirmationTokens();
         confirm(links.get(links.size() - 1), "owner password 4567", 204);
         login("stranger password 123", 401);
-        String access = json.readTree(login("owner password 4567", 200)).get("accessToken").asText();
+        String access = json.readTree(login("owner password 4567", 200)).get("accessToken").asString();
 
         String me = mvc.perform(get("/api/me").header("Authorization", "Bearer " + access))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -105,10 +105,10 @@ class BootstrapAdminIntegrationTest {
         // The owner's pending registration is untouched and becomes the administrator.
         List<String> links = confirmationTokens();
         confirm(links.get(links.size() - 1), "owner password 4567", 204);
-        String access = json.readTree(login("owner password 4567", 200)).get("accessToken").asText();
+        String access = json.readTree(login("owner password 4567", 200)).get("accessToken").asString();
         String me = mvc.perform(get("/api/me").header("Authorization", "Bearer " + access))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        assertThat(json.readTree(me).get("email").asText()).isEqualTo(OWNER);
+        assertThat(json.readTree(me).get("email").asString()).isEqualTo(OWNER);
         assertThat(json.readTree(me).get("roles").toString()).contains("ADMIN");
     }
 
@@ -125,7 +125,7 @@ class BootstrapAdminIntegrationTest {
 
         String access = json.readTree(mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(java.util.Map.of("email", LONG_S_TWIN, "password", "twin password 1234"))))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("accessToken").asText();
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("accessToken").asString();
         String me = mvc.perform(get("/api/me").header("Authorization", "Bearer " + access))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(json.readTree(me).get("roles").toString()).doesNotContain("ADMIN");

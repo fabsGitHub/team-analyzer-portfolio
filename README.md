@@ -23,7 +23,7 @@ A full-stack team-survey application: team leads create short surveys, every tea
 
 | Area | Technology |
 | --- | --- |
-| Backend | Java 21, Spring Boot 3.5, Spring Security 6, Spring Data JPA / Hibernate, Flyway, Nimbus JOSE + JWT |
+| Backend | Java 21, Spring Boot 4.1, Spring Security 7, Spring Data JPA / Hibernate 7, Flyway, Nimbus JOSE + JWT |
 | Database | MySQL 8.4 |
 | Frontend | Vue 3, TypeScript, Vite, Vue Router, vue-i18n, Axios |
 | Testing | JUnit 5, Mockito, Testcontainers (MySQL), Cypress component tests |

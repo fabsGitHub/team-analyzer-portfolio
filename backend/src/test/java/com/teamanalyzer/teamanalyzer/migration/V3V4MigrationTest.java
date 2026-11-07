@@ -12,7 +12,7 @@ import java.util.List;
 
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -29,7 +29,7 @@ class V3V4MigrationTest {
     private static final String RECOVERY = "DELETE FROM flyway_schema_history WHERE version = '3' AND success = 0";
 
     @Container
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.6");
+    static final MySQLContainer MYSQL = new MySQLContainer("mysql:8.4.6");
 
     @Test
     void v3_canonicalises_legacy_addresses_like_the_application_does() throws Exception {

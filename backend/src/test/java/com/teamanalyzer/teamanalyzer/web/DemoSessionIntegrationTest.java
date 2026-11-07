@@ -13,7 +13,7 @@ import jakarta.servlet.http.Cookie;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,8 +21,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.teamanalyzer.teamanalyzer.service.DemoWorkspaceCleanup;
 
 /**
@@ -47,12 +47,12 @@ class DemoSessionIntegrationTest {
     void a_demo_session_opens_a_seeded_workspace_for_24_hours() throws Exception {
         MvcResult started = startDemo();
         JsonNode body = json.readTree(started.getResponse().getContentAsString());
-        String surveyId = body.get("surveyId").asText();
+        String surveyId = body.get("surveyId").asString();
 
         assertThat(started.getResponse().getHeader(HttpHeaders.SET_COOKIE)).contains("Max-Age=86400");
 
         MvcResult results = mvc.perform(get("/api/surveys/{id}/results", surveyId)
-                .header("Authorization", "Bearer " + body.get("accessToken").asText()))
+                .header("Authorization", "Bearer " + body.get("accessToken").asString()))
                 .andExpect(status().isOk())
                 .andReturn();
         assertThat(json.readTree(results.getResponse().getContentAsString()).get("n").asInt()).isEqualTo(18);
@@ -135,7 +135,7 @@ class DemoSessionIntegrationTest {
     }
 
     private Workspace workspace(MvcResult started) throws Exception {
-        String surveyId = json.readTree(started.getResponse().getContentAsString()).get("surveyId").asText();
+        String surveyId = json.readTree(started.getResponse().getContentAsString()).get("surveyId").asString();
         Map<String, Object> row = jdbc.queryForMap(
                 "select bin_to_uuid(created_by) as user_id, bin_to_uuid(team_id) as team_id from surveys where id = uuid_to_bin(?)",
                 surveyId);
