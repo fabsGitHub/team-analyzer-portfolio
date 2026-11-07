@@ -10,7 +10,7 @@ COPY backend/src ./src
 RUN --mount=type=cache,target=/root/.m2 \
     mvn --batch-mode --no-transfer-progress -Dmaven.test.skip=true package
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 RUN groupadd --system app && useradd --system --gid app --home-dir /app --shell /usr/sbin/nologin app
 WORKDIR /app
 COPY --from=build --chown=app:app /workspace/target/team-analyzer.jar /app/app.jar
