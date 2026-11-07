@@ -1,7 +1,7 @@
 // backend/src/main/java/com/teamanalyzer/teamanalyzer/service/DownloadTokenService.java
 package com.teamanalyzer.teamanalyzer.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.teamanalyzer.teamanalyzer.port.AppClock;
 import com.teamanalyzer.teamanalyzer.port.TokenSigner;
 import org.springframework.stereotype.Service;
@@ -50,11 +50,11 @@ public class DownloadTokenService {
       byte[] raw = Base64.getUrlDecoder().decode(payload);
       var n = om.readTree(new String(raw, StandardCharsets.UTF_8));
 
-      if (!expectedSurveyId.toString().equals(n.path("sid").asText()))
+      if (!expectedSurveyId.toString().equals(n.path("sid").asString()))
         throw new IllegalArgumentException("wrong sid");
       if (clock.now().getEpochSecond() > n.path("exp").asLong())
         throw new IllegalArgumentException("expired");
-      return UUID.fromString(n.path("uid").asText());
+      return UUID.fromString(n.path("uid").asString());
     } catch (IllegalArgumentException ex) {
       throw ex;
     } catch (Exception e) {

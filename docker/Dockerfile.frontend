@@ -5,7 +5,9 @@ FROM node:26-alpine AS build
 WORKDIR /app
 # The Cypress binary is only needed for tests, not for the production bundle.
 ENV CYPRESS_INSTALL_BINARY=0
-RUN corepack enable
+# Node 25+ images no longer bundle Corepack. Install it so pnpm comes from package.json's
+# "packageManager" field, as on developer machines and in CI.
+RUN npm install --global corepack@0.36.0 && corepack enable
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile

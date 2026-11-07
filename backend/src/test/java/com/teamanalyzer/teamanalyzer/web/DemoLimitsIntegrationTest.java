@@ -21,7 +21,7 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -31,8 +31,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Limits for anonymous demo visitors: what one demo token may create in its workspace, how many
@@ -225,10 +225,10 @@ class DemoLimitsIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode body = json.readTree(started.getResponse().getContentAsString());
-        String surveyId = body.get("surveyId").asText();
+        String surveyId = body.get("surveyId").asString();
         String teamId = jdbc.queryForObject("select bin_to_uuid(team_id) from surveys where id = uuid_to_bin(?)",
                 String.class, surveyId);
-        return new Session(body.get("accessToken").asText(), surveyId, teamId,
+        return new Session(body.get("accessToken").asString(), surveyId, teamId,
                 started.getResponse().getCookie("refresh_token"));
     }
 

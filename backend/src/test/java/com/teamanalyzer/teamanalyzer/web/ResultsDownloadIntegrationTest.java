@@ -12,14 +12,14 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.teamanalyzer.teamanalyzer.domain.Role;
 import com.teamanalyzer.teamanalyzer.domain.Survey;
 import com.teamanalyzer.teamanalyzer.domain.User;
@@ -99,7 +99,7 @@ class ResultsDownloadIntegrationTest {
                 .header("Authorization", "Bearer " + login(user)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        URI url = URI.create(json.readTree(body).get("url").asText());
+        URI url = URI.create(json.readTree(body).get("url").asString());
         return mvc.perform(get(url.getPath() + "?" + url.getRawQuery()))
                 .andReturn().getResponse().getStatus();
     }
@@ -118,6 +118,6 @@ class ResultsDownloadIntegrationTest {
                 .content(json.writeValueAsString(Map.of("email", user.getEmail(), "password", PASSWORD))))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        return json.readTree(body).get("accessToken").asText();
+        return json.readTree(body).get("accessToken").asString();
     }
 }
