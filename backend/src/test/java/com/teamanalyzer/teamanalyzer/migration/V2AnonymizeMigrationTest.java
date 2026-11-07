@@ -9,7 +9,7 @@ import java.sql.Statement;
 
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -22,7 +22,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class V2AnonymizeMigrationTest {
 
     @Container
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.6");
+    static final MySQLContainer MYSQL = new MySQLContainer("mysql:8.4.6");
 
     @Test
     void v2_unlinks_and_rewrites_existing_responses() throws Exception {

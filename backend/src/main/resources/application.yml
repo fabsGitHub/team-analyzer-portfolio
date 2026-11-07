@@ -26,19 +26,20 @@ spring:
     clean-disabled: true
     validate-migration-naming: true
   autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
   http:
-    client:
+    clients:
       # Outgoing HTTP calls (e.g. the Brevo mail API) must never block a request indefinitely.
       connect-timeout: 5s
       read-timeout: 10s
+  web:
+    error:
+      include-message: never
+      include-stacktrace: never
 
 server:
   port: ${PORT:8080}
   shutdown: graceful
-  error:
-    include-message: never
-    include-stacktrace: never
 
 management:
   endpoints:

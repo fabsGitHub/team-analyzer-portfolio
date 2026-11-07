@@ -1,1 +1,1 @@
-org.springframework.boot.env.EnvironmentPostProcessor=com.teamanalyzer.teamanalyzer.support.TestSigningSecrets
+org.springframework.boot.EnvironmentPostProcessor=com.teamanalyzer.teamanalyzer.support.TestSigningSecrets
