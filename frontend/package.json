@@ -18,7 +18,7 @@
     "axios": "^1.21.0",
     "vue": "^3.5.44",
     "vue-i18n": "^9.14.0",
-    "vue-router": "^4.3.0"
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
